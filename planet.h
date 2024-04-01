@@ -10,19 +10,14 @@
 
 #include "geometry.h"
 
-typedef struct vertex_s {
-	vec3 pos;
-	vec3 normal;
-} Vertex;
-
 typedef struct mesh_s {
 	GLuint VAO;
-	Vertex* vertices;
+	const vec3* vertices;
 	int vertexCount;
-	int* indices;
+	const int* indices;
 	int indexCount;
 } Mesh;
 
-Mesh generateIcosphere(bool *err);
+Mesh generateIcosphere();
 
 void freeMesh(Mesh* mesh);
