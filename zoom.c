@@ -9,9 +9,7 @@
 
 #include "shader.h"
 #include "galaxy.h"
-#include "planete.h"
-
-typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+#include "planet.h"
 
 void checkOpenGLError() {
 	GLenum err;
@@ -32,6 +30,7 @@ void checkOpenGLError() {
 }
 
 bool running = true;
+bool displayGalaxy = true;
 bool mousePressed = false;
 int lastX = 0, lastY = 0;
 float cameraAngleX = -0.75f, cameraAngleY = 0.0f;
@@ -40,58 +39,61 @@ mat4 projection = {0};
 
 void handleEvents(Display *display, Atom wmDelete) {
 	XEvent event;
-		while (XPending(display)) {
-			XNextEvent(display, &event);
-			switch (event.type) {
-				case ClientMessage:
-					if (event.xclient.data.l[0] == wmDelete) {
-						running = false;
-					}
-					break;
+	while (XPending(display)) {
+		XNextEvent(display, &event);
+		switch (event.type) {
+			case ClientMessage:
+				if (event.xclient.data.l[0] == wmDelete) {
+					running = false;
+				}
+				break;
 
-				case ConfigureNotify:
-					{
-						XConfigureEvent xce = event.xconfigure;
-						glViewport(0, 0, xce.width, xce.height);
+			case ConfigureNotify:
+				{
+					XConfigureEvent xce = event.xconfigure;
+					glViewport(0, 0, xce.width, xce.height);
 
-						projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
-					}
-					break;
+					projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
+				}
+				break;
 
-				case KeyPress:
-					KeySym key = XLookupKeysym(&event.xkey, 0);
-					if (key == XK_Escape) {
-						running = false;
-					}
-					break;
+			case KeyPress:
+				KeySym key = XLookupKeysym(&event.xkey, 0);
+				if (key == XK_Escape) {
+					running = false;
+				}
+				else if (key == XK_Tab) {
+					displayGalaxy = !displayGalaxy;
+				}
+				break;
 
-				case ButtonPress:
-					if (event.xbutton.button == Button1) {
-						mousePressed = true;
-						lastX = event.xbutton.x;
-						lastY = event.xbutton.y;
-					}
-					break;
+			case ButtonPress:
+				if (event.xbutton.button == Button1) {
+					mousePressed = true;
+					lastX = event.xbutton.x;
+					lastY = event.xbutton.y;
+				}
+				break;
 
-				case ButtonRelease:
-					if (event.xbutton.button == Button1) {
-						mousePressed = false;
-					}
-					break;
+			case ButtonRelease:
+				if (event.xbutton.button == Button1) {
+					mousePressed = false;
+				}
+				break;
 
-				case MotionNotify:
-					if (mousePressed) {
-						int dx = event.xmotion.x - lastX;
-						int dy = event.xmotion.y - lastY;
-						lastX = event.xmotion.x;
-						lastY = event.xmotion.y;
+			case MotionNotify:
+				if (mousePressed) {
+					int dx = event.xmotion.x - lastX;
+					int dy = event.xmotion.y - lastY;
+					lastX = event.xmotion.x;
+					lastY = event.xmotion.y;
 
-						cameraAngleX += (float)dy * 0.001f;
-						cameraAngleY -= (float)dx * 0.001f;
-					}
-					break;
-			}
+					cameraAngleX += (float)dy * 0.001f;
+					cameraAngleY -= (float)dx * 0.001f;
+				}
+				break;
 		}
+	}
 }
 
 int main() {
@@ -104,7 +106,6 @@ int main() {
 	int screen = DefaultScreen(display);
 	Window root = RootWindow(display, screen);
 
-	// Attributs pour le framebuffer config
 	int fbAttribs[] = {
 		GLX_X_RENDERABLE, True,
 		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
@@ -117,6 +118,8 @@ int main() {
 		GLX_DEPTH_SIZE, 24,
 		GLX_STENCIL_SIZE, 8,
 		GLX_DOUBLEBUFFER, True,
+		GLX_SAMPLE_BUFFERS, 1,
+		GLX_SAMPLES, 4,
 		None
 	};
 
@@ -138,6 +141,7 @@ int main() {
 
 	XSetWindowAttributes swa;
 	swa.colormap = XCreateColormap(display, root, vi->visual, AllocNone);
+	swa.border_pixel = 0;
 	swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
 
 	Window win = XCreateWindow(
@@ -145,7 +149,7 @@ int main() {
 		0, 0, 800, 600, 0,
 		vi->depth, InputOutput,
 		vi->visual,
-		CWColormap | CWEventMask, &swa
+		CWBorderPixel | CWColormap | CWEventMask, &swa
 	);
 
 	// Handle close button
@@ -155,8 +159,8 @@ int main() {
 	XMapWindow(display, win);
 	XStoreName(display, win, "Zoom Demo");
 
+	typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc) glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
-
 	if (glXCreateContextAttribsARB == NULL) {
 		fprintf(stderr, "glXCreateContextAttribsARB not found. Exiting.\n");
 		exit(1);
@@ -183,14 +187,14 @@ int main() {
 		return -1;
 	}
 
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_PROGRAM_POINT_SIZE);
 	glEnable(GL_BLEND);
 
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -207,12 +211,7 @@ int main() {
 	}
 	else running = false;
 
-	bool error = false;
-	Mesh planete = generateIcosphere(&error);
-	if (error) {
-		printf("error\n");
-		running = false;
-	}
+	Mesh planete = generateIcosphere();
 	
 	float camDistance = 10.0f;
 
@@ -223,48 +222,49 @@ int main() {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		// Drawing galaxy
-		glUseProgram(galaxyShader);
+		if (displayGalaxy) {
+			// Drawing galaxy
+			glUseProgram(galaxyShader);
 
-		glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-		glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-		
-		glDepthMask(0x00);
-		glBindVertexArray(galaxyVAO);
-		glDrawArrays(GL_POINTS, 0, num_stars);
-		glBindVertexArray(0);
-		glDepthMask(0xFF);
-		
+			glDepthMask(0x00);
+			glBindVertexArray(galaxyVAO);
+			glDrawArrays(GL_POINTS, 0, num_stars);
+			glBindVertexArray(0);
+			glDepthMask(0xFF);
+		}
+		else {
+			// Drawing planetes
+			glUseProgram(planeteShader);
 
+			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			
+			glUniform1i(glGetUniformLocation(planeteShader, "subdivisions"), 5);
 
-		// Drawing planetes
-		glUseProgram(planeteShader);
+			glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
 
-		glUniformMatrix4fv(glGetUniformLocation(planeteShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-		glUniformMatrix4fv(glGetUniformLocation(planeteShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-		
-		glUniform1i(glGetUniformLocation(planeteShader, "subdivisions"), 1);
-
-		glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
-
-		glBindVertexArray(planete.VAO);
-		glDrawElements(GL_TRIANGLES, planete.indexCount, GL_UNSIGNED_INT, NULL);
-		glBindVertexArray(0);
+			glBindVertexArray(planete.VAO);
+			glDrawElements(GL_TRIANGLES, planete.indexCount, GL_UNSIGNED_INT, NULL);
+			glBindVertexArray(0);
+		}
 
 		checkOpenGLError();
 
 		glXSwapBuffers(display, win);
 	}
 
+	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
 	freeMesh(&planete);
 
 	glXMakeCurrent(display, None, NULL);
-    glXDestroyContext(display, glc);
-    XDestroyWindow(display, win);
-    XFreeColormap(display, swa.colormap);
-    XFree(vi);
-    XCloseDisplay(display);
+	glXDestroyContext(display, glc);
+	XDestroyWindow(display, win);
+	XFreeColormap(display, swa.colormap);
+	XFree(vi);
+	XCloseDisplay(display);
 
 	return 0;
 }
