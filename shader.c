@@ -194,61 +194,54 @@ void main() {
 
 const char planeteVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
-layout(location = 1) in vec3 normalIn;
-
-uniform mat4 projection;
-uniform mat4 view;
-
-out vec3 normal;
 
 void main() {
-	vec3 position = positionIn;
-	position.y = -positionIn.y;
-	normal = normalIn;
-	normal.y = -normalIn.y;
-
-	gl_Position = projection * view * vec4(position, 1.0);
+	gl_Position = vec4(positionIn, 1.0);
 }
 )glsl";
 
 const char planeteGemoShaderSrc[] = R"glsl(#version 330 core
 layout(triangles) in;
-layout(triangle_strip, max_vertices = 64) out;
-
-in vec3 normal[];
+layout(triangle_strip, max_vertices = 128) out;
 
 out vec3 fragNormal;
 
+uniform mat4 projection;
+uniform mat4 view;
 uniform int subdivisions;
 
 const int MAX_SUBDIVISIONS = 5;
 
-void emitVertex(vec4 position) {
-	gl_Position = position;
+vec3 calculateNormal(vec3 point) {
+	return normalize(point);
+}
+
+void emitVertex(vec3 position) {
+	fragNormal = calculateNormal(position);
+	gl_Position = projection * view * vec4(normalize(position), 1.0);
 	EmitVertex();
 }
 
-void subdivideAndEmit(vec4 A, vec4 B, vec4 C, int s) {
+void subdivideAndEmit(vec3 A, vec3 B, vec3 C, int s) {
 	if (s <= 1 || s > MAX_SUBDIVISIONS) {
 		emitVertex(A);
 		emitVertex(B);
 		emitVertex(C);
 		EndPrimitive();
-	}
-	else {
-		vec4 lastPoints[MAX_SUBDIVISIONS + 1];
+	} else {
+		vec3 lastPoints[MAX_SUBDIVISIONS + 1];
 		lastPoints[0] = A;
 
 		for (int i = 1; i <= s; i++) {
-			vec4 p1 = mix(A, B, float(i) / float(s));
-			vec4 p2 = mix(A, C, float(i) / float(s));
+			vec3 p1 = mix(A, B, float(i) / float(s));
+			vec3 p2 = mix(A, C, float(i) / float(s));
 
-			vec4 points[MAX_SUBDIVISIONS + 1];
+			vec3 points[MAX_SUBDIVISIONS + 1];
 			points[0] = p1;
 			int pointCount = 1;
 
 			for (int j = 1; j <= i; j++) {
-				vec4 p3 = mix(p1, p2, float(j) / float(i));
+				vec3 p3 = mix(p1, p2, float(j) / float(i));
 				points[pointCount++] = p3;
 
 				if (j > 1) {
@@ -259,9 +252,10 @@ void subdivideAndEmit(vec4 A, vec4 B, vec4 C, int s) {
 				}
 				
 				if (j <= i) {
+					vec3 p4 = p3 - (p2 - p1) / float(i);
 					emitVertex(lastPoints[j - 1]);
 					emitVertex(p3);
-					emitVertex(p3 - (p2 - p1) / float(i));
+					emitVertex(p4);
 					EndPrimitive();
 				}
 			}
@@ -274,9 +268,9 @@ void subdivideAndEmit(vec4 A, vec4 B, vec4 C, int s) {
 }
 
 void main() {
-	vec4 A = gl_in[0].gl_Position;
-	vec4 B = gl_in[1].gl_Position;
-	vec4 C = gl_in[2].gl_Position;
+	vec3 A = gl_in[0].gl_Position.xyz;
+	vec3 B = gl_in[1].gl_Position.xyz;
+	vec3 C = gl_in[2].gl_Position.xyz;
 
 	subdivideAndEmit(A, B, C, subdivisions);
 }
