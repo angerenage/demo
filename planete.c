@@ -76,18 +76,6 @@ Mesh generateIcosphere(bool *err) {
 
 	Mesh mesh = {vao, vertices, vertexCount, indices, indexCount};
 	return mesh;
-
-	/*Vertex* vertices = malloc(sizeof(Vertex) * 3);
-	vertices[0] = (Vertex){-1.0, -1.0, 0.0};
-	vertices[1] = (Vertex){1.0, -1.0, 0.0};
-	vertices[2] = (Vertex){0.0, 1.0, 0.0};
-
-	int indices[] = {0, 1, 2};
-
-	GLuint vao = createIcosphereVAO(vertices, 3, indices, 3);
-
-	Mesh mesh = {vao, vertices, 3, indices, 3};
-	return mesh;*/
 }
 
 void freeMesh(Mesh* mesh) {
