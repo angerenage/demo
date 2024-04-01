@@ -11,6 +11,8 @@
 #include "galaxy.h"
 #include "planete.h"
 
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+
 void checkOpenGLError() {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
@@ -102,14 +104,33 @@ int main() {
 	int screen = DefaultScreen(display);
 	Window root = RootWindow(display, screen);
 
+	// Attributs pour le framebuffer config
 	int fbAttribs[] = {
-		GLX_RGBA,
+		GLX_X_RENDERABLE, True,
+		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
+		GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+		GLX_RED_SIZE, 8,
+		GLX_GREEN_SIZE, 8,
+		GLX_BLUE_SIZE, 8,
+		GLX_ALPHA_SIZE, 8,
 		GLX_DEPTH_SIZE, 24,
-		GLX_DOUBLEBUFFER,
+		GLX_STENCIL_SIZE, 8,
+		GLX_DOUBLEBUFFER, True,
 		None
 	};
 
-	XVisualInfo *vi = glXChooseVisual(display, screen, fbAttribs);
+	int fbcount;
+	GLXFBConfig *fbConfigs = glXChooseFBConfig(display, screen, fbAttribs, &fbcount);
+	if (!fbConfigs || fbcount == 0) {
+		fprintf(stderr, "Failed to retrieve framebuffer config\n");
+		return 1;
+	}
+
+	GLXFBConfig fbConfig = fbConfigs[0]; // Choisissez le premier de la liste
+	XFree(fbConfigs); // Libérer la liste des configurations
+
+	XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbConfig);
 	if (vi == NULL) {
 		fprintf(stderr, "No appropriate visual found\n");
 		return 1;
@@ -118,7 +139,6 @@ int main() {
 	XSetWindowAttributes swa;
 	swa.colormap = XCreateColormap(display, root, vi->visual, AllocNone);
 	swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
-
 
 	Window win = XCreateWindow(
 		display, root,
@@ -135,9 +155,23 @@ int main() {
 	XMapWindow(display, win);
 	XStoreName(display, win, "Zoom Demo");
 
-	GLXContext glc = glXCreateContext(display, vi, NULL, GL_TRUE);
+	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc) glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
+
+	if (glXCreateContextAttribsARB == NULL) {
+		fprintf(stderr, "glXCreateContextAttribsARB not found. Exiting.\n");
+		exit(1);
+	}
+
+	int contextAttribs[] = {
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+		GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		None
+	};
+
+	GLXContext glc = glXCreateContextAttribsARB(display, fbConfig, NULL, True, contextAttribs);
 	if (!glc) {
-		fprintf(stderr, "Could not create GLX context\n");
+		fprintf(stderr, "Failed to create GL context\n");
 		return 1;
 	}
 	glXMakeCurrent(display, win, glc);
@@ -149,8 +183,8 @@ int main() {
 		return -1;
 	}
 
-	//glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 
 	glDepthFunc(GL_LESS);
@@ -164,7 +198,7 @@ int main() {
 
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.1f, 1000.0f);
 
-	unsigned int num_stars = 20000;
+	unsigned int num_stars = 30000;
 	StarPoint *stars = generateGalaxy(num_stars);
 	GLuint galaxyVAO = 0;
 	if (stars) {
@@ -215,7 +249,7 @@ int main() {
 		glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
 
 		glBindVertexArray(planete.VAO);
-		glDrawElements(GL_TRIANGLE_STRIP, planete.indexCount, GL_UNSIGNED_INT, NULL);
+		glDrawElements(GL_TRIANGLES, planete.indexCount, GL_UNSIGNED_INT, NULL);
 		glBindVertexArray(0);
 
 		checkOpenGLError();
@@ -226,10 +260,11 @@ int main() {
 	freeMesh(&planete);
 
 	glXMakeCurrent(display, None, NULL);
-	glXDestroyContext(display, glc);
-	XDestroyWindow(display, win);
-	XFree(vi);
-	XCloseDisplay(display);
+    glXDestroyContext(display, glc);
+    XDestroyWindow(display, win);
+    XFreeColormap(display, swa.colormap);
+    XFree(vi);
+    XCloseDisplay(display);
 
 	return 0;
 }
