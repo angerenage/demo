@@ -199,13 +199,13 @@ layout(location = 1) in vec3 normalIn;
 uniform mat4 projection;
 uniform mat4 view;
 
-//out vec3 normal;
+out vec3 normal;
 
 void main() {
 	vec3 position = positionIn;
 	position.y = -positionIn.y;
-	//normal = normalIn;
-	//normal.y = -normalIn.y;
+	normal = normalIn;
+	normal.y = -normalIn.y;
 
 	gl_Position = projection * view * vec4(position, 1.0);
 }
@@ -213,26 +213,7 @@ void main() {
 
 const char planeteGemoShaderSrc[] = R"glsl(#version 330 core
 layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-//in vec3 normal[];
-
-//out vec3 fragNormal;
-
-void main() {
-	for (int i = 0; i < 3; i++) {
-		vec3 pos = gl_in[i].gl_Position.xyz;
-		
-		gl_Position = vec4(pos, 1.0);
-		//fragNormal = normal[i];
-
-		EmitVertex();
-	}
-	EndPrimitive();
-}
-)glsl";/*R"glsl(#version 330 core
-layout(triangles) in;
-layout(points, max_vertices = 64) out;
+layout(triangle_strip, max_vertices = 64) out;
 
 in vec3 normal[];
 
@@ -242,12 +223,12 @@ uniform int subdivisions;
 
 const int MAX_SUBDIVISIONS = 5;
 
-void emitVertex(vec3 position) {
-	gl_Position = vec4(position, 1.0);
+void emitVertex(vec4 position) {
+	gl_Position = position;
 	EmitVertex();
 }
 
-void subdivideAndEmit(vec3 A, vec3 B, vec3 C, int s) {
+void subdivideAndEmit(vec4 A, vec4 B, vec4 C, int s) {
 	if (s <= 1 || s > MAX_SUBDIVISIONS) {
 		emitVertex(A);
 		emitVertex(B);
@@ -255,19 +236,19 @@ void subdivideAndEmit(vec3 A, vec3 B, vec3 C, int s) {
 		EndPrimitive();
 	}
 	else {
-		vec3 lastPoints[MAX_SUBDIVISIONS + 1];
+		vec4 lastPoints[MAX_SUBDIVISIONS + 1];
 		lastPoints[0] = A;
 
 		for (int i = 1; i <= s; i++) {
-			vec3 p1 = mix(A, B, float(i) / float(s));
-			vec3 p2 = mix(A, C, float(i) / float(s));
+			vec4 p1 = mix(A, B, float(i) / float(s));
+			vec4 p2 = mix(A, C, float(i) / float(s));
 
-			vec3 points[MAX_SUBDIVISIONS + 1];
+			vec4 points[MAX_SUBDIVISIONS + 1];
 			points[0] = p1;
 			int pointCount = 1;
 
 			for (int j = 1; j <= i; j++) {
-				vec3 p3 = mix(p1, p2, float(j) / float(i));
+				vec4 p3 = mix(p1, p2, float(j) / float(i));
 				points[pointCount++] = p3;
 
 				if (j > 1) {
@@ -293,35 +274,23 @@ void subdivideAndEmit(vec3 A, vec3 B, vec3 C, int s) {
 }
 
 void main() {
-	vec3 A = gl_in[0].gl_Position.xyz;
-	vec3 B = gl_in[1].gl_Position.xyz;
-	vec3 C = gl_in[2].gl_Position.xyz;
+	vec4 A = gl_in[0].gl_Position;
+	vec4 B = gl_in[1].gl_Position;
+	vec4 C = gl_in[2].gl_Position;
 
-	gl_Position = vec4(A, 1.0);
-	fragNormal = vec3(0.0, 1.0, 0.0);
-	EmitVertex();
-	gl_Position = vec4(B, 1.0);
-	fragNormal = vec3(0.0, 1.0, 0.0);
-	EmitVertex();
-	gl_Position = vec4(C, 1.0);
-	fragNormal = vec3(0.0, 1.0, 0.0);
-	EmitVertex();
-
-	EndPrimitive();
-
-	//subdivideAndEmit(A, B, C, subdivisions);
+	subdivideAndEmit(A, B, C, subdivisions);
 }
-)glsl";*/
+)glsl";
 
 const char planeteFragShaderSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
-//in vec3 fragNormal;
+in vec3 fragNormal;
 
 uniform vec3 lightDir;
 
 void main() {
-	//float dirLight = max(0.0, dot(lightDir, fragNormal));
-	fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	float shadow = max(0.0, dot(lightDir, fragNormal));
+	fragColor = vec4(vec3(shadow), 1.0);
 }
 )glsl";
