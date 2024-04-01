@@ -10,6 +10,7 @@
 #include "shader.h"
 #include "galaxy.h"
 #include "planet.h"
+#include "text.h"
 
 void checkOpenGLError() {
 	GLenum err;
@@ -30,7 +31,7 @@ void checkOpenGLError() {
 }
 
 bool running = true;
-bool displayGalaxy = true;
+bool displayGalaxy = false;
 bool mousePressed = false;
 int lastX = 0, lastY = 0;
 float cameraAngleX = -0.75f, cameraAngleY = 0.0f;
@@ -212,15 +213,24 @@ int main() {
 	else running = false;
 
 	Mesh planete = generateIcosphere();
+
+	int baseId = 0;
+	int indiceCount = 0;
+	GLuint t = createText("0987654321", &baseId, &indiceCount);
 	
 	float camDistance = 10.0f;
 
 	while (running) {
 		handleEvents(display, wmDelete);
 
-		mat4 view = viewMatrix((vec3){camDistance  * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance  * sin(cameraAngleX) * cos(cameraAngleY)}, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
+		mat4 view = viewMatrix((vec3){camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)}, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(textShader);
+
+		glBindVertexArray(t);
+		glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, NULL);
 		
 		if (displayGalaxy) {
 			// Drawing galaxy
@@ -232,7 +242,6 @@ int main() {
 			glDepthMask(0x00);
 			glBindVertexArray(galaxyVAO);
 			glDrawArrays(GL_POINTS, 0, num_stars);
-			glBindVertexArray(0);
 			glDepthMask(0xFF);
 		}
 		else {
@@ -248,7 +257,6 @@ int main() {
 
 			glBindVertexArray(planete.VAO);
 			glDrawElements(GL_TRIANGLES, planete.indexCount, GL_UNSIGNED_INT, NULL);
-			glBindVertexArray(0);
 		}
 
 		checkOpenGLError();

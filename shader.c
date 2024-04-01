@@ -2,10 +2,12 @@
 
 unsigned int galaxyShader = 0;
 unsigned int planeteShader = 0;
+unsigned int textShader = 0;
 
 void initShaders() {
 	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
 	planeteShader = compileShader(planeteVertShaderSrc, planeteGemoShaderSrc, planeteFragShaderSrc);
+	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 }
 
 unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode) {
@@ -286,5 +288,27 @@ uniform vec3 lightDir;
 void main() {
 	float shadow = max(0.0, dot(lightDir, fragNormal));
 	fragColor = vec4(vec3(shadow), 1.0);
+}
+)glsl";
+
+const char textVertShaderSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec2 positionIn;
+layout(location = 1) in int idIn;
+
+flat out int id;
+
+void main() {
+	id = idIn;
+	gl_Position = vec4(positionIn, 0.0, 1.0);
+}
+)glsl";
+
+const char textFragShaderSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+flat in int id;
+
+void main() {
+	fragColor = vec4(1.0);
 }
 )glsl";

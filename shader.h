@@ -10,8 +10,12 @@ extern const char planeteVertShaderSrc[];
 extern const char planeteGemoShaderSrc[];
 extern const char planeteFragShaderSrc[];
 
+extern const char textVertShaderSrc[];
+extern const char textFragShaderSrc[];
+
 extern unsigned int galaxyShader;
 extern unsigned int planeteShader;
+extern unsigned int textShader;
 
 void initShaders();
 
