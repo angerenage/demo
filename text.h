@@ -1,10 +1,11 @@
 #pragma once
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "geometry.h"
 
@@ -18,7 +19,7 @@ typedef struct charSquare_s {
 	int id;
 } CharSquare;
 
-Glyph getGlyphForCharacter(char c);
+Glyph getGlyphForCharacter(wchar_t c);
 
-GLuint createText(char *text, int *indiceCount);
+GLuint createText(wchar_t *text, int *indiceCount);
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber);

@@ -1,8 +1,5 @@
 #include "planet.h"
 
-#include <math.h>
-#include <stdlib.h>
-
 #define X .525731112119133606
 #define Z .850650808352039932
 

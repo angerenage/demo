@@ -304,10 +304,10 @@ uniform float aspectRatio;
 void main() {
 	id = idIn;
 
-	vec2 adjustedPosition = positionIn / 5.0f;
+	vec2 adjustedPosition = positionIn / 10.0f;
 	adjustedPosition.x /= aspectRatio;
 
-	gl_Position = vec4(adjustedPosition, 0.0, 1.0) - vec4(0.9f, 0.7, 0.0, 0.0);
+	gl_Position = vec4(adjustedPosition, 0.0, 1.0) - vec4(0.90f, 0.80f, 0.0, 0.0);
 }
 )glsl";
 
@@ -326,7 +326,7 @@ void main() {
 	float randomness = pseudoRandom(id * 0.1);
 	float bias = id / 100.0;
 	float visibilityThreshold = randomness * 0.5 + bias;
-	if (visibilityThreshold > time * 3.0) discard;
+	if (visibilityThreshold > time * 7.0) discard;
 
 	fragColor = vec4(1.0); 
 }

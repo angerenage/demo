@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <GL/gl.h>
@@ -186,10 +186,8 @@ int main() {
 	}
 	glXMakeCurrent(display, win, glc);
 
-	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
-	if (GLEW_OK != err) {
-		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+	if (!gladLoadGLLoader((GLADloadproc)glXGetProcAddress)) {
+		fprintf(stderr, "Failed to initialize GLAD\n");
 		return -1;
 	}
 
@@ -220,13 +218,13 @@ int main() {
 	Mesh planete = generateIcosphere();
 
 	int indiceCount = 0;
-	GLuint t = createText("0123456789", &indiceCount);
+	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
 	
 	float camDistance = 10.0f;
 
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	
+
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		float ftime = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;

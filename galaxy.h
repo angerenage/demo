@@ -1,7 +1,8 @@
 #pragma once
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 #include "geometry.h"
 
