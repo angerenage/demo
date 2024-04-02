@@ -86,7 +86,7 @@ typedef struct textPoint_s {
 	int id;
 } TextPoint;
 
-static GLuint createTextVAO(const TextPoint* points, int pointCount, const int* indices, int indexCount) {
+static GLuint createTextVAO(const TextPoint* points, int pointCount, const unsigned int* indices, int indexCount) {
 	GLuint vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -98,12 +98,15 @@ static GLuint createTextVAO(const TextPoint* points, int pointCount, const int* 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
 	glBufferData(GL_ARRAY_BUFFER, pointCount * sizeof(TextPoint), points, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(int), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
 
+	// Attribut pour la position
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TextPoint), (void*)offsetof(TextPoint, pos));
+
+	// Attribut pour l'identifiant
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 1, GL_INT, GL_FALSE, sizeof(int), (void*)0);
+	glVertexAttribIPointer(1, 1, GL_INT, sizeof(TextPoint), (void*)offsetof(TextPoint, id));
 
 	glBindVertexArray(0);
 
@@ -120,47 +123,47 @@ Glyph getGlyphForCharacter(char c) {
 
 GLuint createText(char *text, int *baseId, int *indiceCount) {
 	int charId = *baseId;
-    unsigned int totalSquareCount = 0;
+	unsigned int totalSquareCount = 0;
 
-    TextPoint *points = NULL;
-    unsigned int *indices = NULL;
-    unsigned int pointCount = 0;
-    unsigned int indexCount = 0;
+	TextPoint *points = NULL;
+	unsigned int *indices = NULL;
+	unsigned int pointCount = 0;
+	unsigned int indexCount = 0;
 
-    while (*text != '\0') {
-        Glyph g = getGlyphForCharacter(*text);
+	while (*text != '\0') {
+		Glyph g = getGlyphForCharacter(*text);
 
-        int squareNumber = 0;
-        CharSquare *squares = createCharacter(g, &charId, &squareNumber);
-        if (squareNumber > 0 && squares) {
-            points = realloc(points, (pointCount + squareNumber * 4) * sizeof(TextPoint));
-            indices = realloc(indices, (indexCount + squareNumber * 6) * sizeof(unsigned int));
+		int squareNumber = 0;
+		CharSquare *squares = createCharacter(g, &charId, &squareNumber);
+		if (squareNumber > 0 && squares) {
+			points = realloc(points, (pointCount + squareNumber * 4) * sizeof(TextPoint));
+			indices = realloc(indices, (indexCount + squareNumber * 6) * sizeof(unsigned int));
 
-            for (int i = 0; i < squareNumber; i++) {
-                for (int j = 0; j < 4; j++) { // Each square has 4 vertices
-                    points[pointCount].pos = squares[i].p[j];
-                    points[pointCount].id = squares[i].id;
-                    pointCount++;
-                }
-                for (int k = 0; k < 6; k++) { // Each square has 6 indices
-                    indices[indexCount++] = squares[i].i[k] + totalSquareCount * 4;
-                }
-                totalSquareCount++;
-            }
-            free(squares);
-        }
+			for (int i = 0; i < squareNumber; i++) {
+				for (int j = 0; j < 4; j++) { // Each square has 4 vertices
+					points[pointCount].pos = squares[i].p[j];
+					points[pointCount].id = squares[i].id;
+					pointCount++;
+				}
+				for (int k = 0; k < 6; k++) { // Each square has 6 indices
+					indices[indexCount++] = squares[i].i[k] + totalSquareCount * 4;
+				}
+				totalSquareCount++;
+			}
+			free(squares);
+		}
 
-        text++;
-        charId++;
-    }
+		text++;
+		charId++;
+	}
 
 	*indiceCount = indexCount;
-    GLuint vao = createTextVAO(points, pointCount, indices, indexCount);
+	GLuint vao = createTextVAO(points, pointCount, indices, indexCount);
 
-    free(points);
-    free(indices);
+	free(points);
+	free(indices);
 
-    return vao;
+	return vao;
 }
 
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
@@ -171,22 +174,20 @@ CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
 		for (int row = 0; row < 8; row++) {
 			for (int column = 0; column < 5; column++) {
 				if (g.c[column] & (1 << row)) {
-					squares[squareNum].id = (*charId) + squareNum;
-					vec2 *pos = squares[squareNum].p;
+					squares[squareNum].id = (*charId) * 5 * 8 + squareNum;
 
-					vec2 origin = (vec2){row * 0.11f, column * 0.11f};
-					pos[0] = origin;
-					pos[1] = (vec2){origin.x + 0.1f, origin.y};
-					pos[2] = (vec2){origin.x, origin.y + 0.1f};
-					pos[3] = (vec2){origin.x + 0.1f, origin.y + 0.1f};
+					vec2 origin = (vec2){(column + 6 * (*charId)) * 0.11f, row * -0.11f};
+					squares[squareNum].p[0] = origin;
+					squares[squareNum].p[1] = (vec2){origin.x + 0.1f, origin.y};
+					squares[squareNum].p[2] = (vec2){origin.x, origin.y - 0.1f};
+					squares[squareNum].p[3] = (vec2){origin.x + 0.1f, origin.y - 0.1f};
 
-					unsigned int *indices = squares[squareNum].i;
-					indices[0] = 0;
-					indices[1] = 1;
-					indices[2] = 2;
-					indices[3] = 1;
-					indices[4] = 3;
-					indices[5] = 2;
+					squares[squareNum].i[0] = 2;
+					squares[squareNum].i[1] = 1;
+					squares[squareNum].i[2] = 0;
+					squares[squareNum].i[3] = 1;
+					squares[squareNum].i[4] = 2;
+					squares[squareNum].i[5] = 3;
 
 					squareNum++;
 				}

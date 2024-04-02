@@ -291,6 +291,8 @@ void main() {
 }
 )glsl";
 
+// --------------------------- TEXT SHADERS ---------------------------
+
 const char textVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec2 positionIn;
 layout(location = 1) in int idIn;
@@ -299,7 +301,7 @@ flat out int id;
 
 void main() {
 	id = idIn;
-	gl_Position = vec4(positionIn, 0.0, 1.0);
+	gl_Position = vec4(positionIn / 5.0f, 0.0, 1.0) - vec4(0.9f, 0.7, 0.0, 0.0);
 }
 )glsl";
 

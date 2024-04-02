@@ -216,7 +216,7 @@ int main() {
 
 	int baseId = 0;
 	int indiceCount = 0;
-	GLuint t = createText("0987654321", &baseId, &indiceCount);
+	GLuint t = createText("0123456789", &baseId, &indiceCount);
 	
 	float camDistance = 10.0f;
 
