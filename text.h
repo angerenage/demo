@@ -20,5 +20,5 @@ typedef struct charSquare_s {
 
 Glyph getGlyphForCharacter(char c);
 
-GLuint createText(char *text, int *baseId, int *indiceCount);
+GLuint createText(char *text, int *indiceCount);
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber);

@@ -299,9 +299,15 @@ layout(location = 1) in int idIn;
 
 flat out int id;
 
+uniform float aspectRatio;
+
 void main() {
 	id = idIn;
-	gl_Position = vec4(positionIn / 5.0f, 0.0, 1.0) - vec4(0.9f, 0.7, 0.0, 0.0);
+
+	vec2 adjustedPosition = positionIn / 5.0f;
+	adjustedPosition.x /= aspectRatio;
+
+	gl_Position = vec4(adjustedPosition, 0.0, 1.0) - vec4(0.9f, 0.7, 0.0, 0.0);
 }
 )glsl";
 
@@ -310,7 +316,18 @@ out vec4 fragColor;
 
 flat in int id;
 
+uniform float time;
+
+float pseudoRandom(float seed) {
+	return fract(sin(seed) * 10000.0);
+}
+
 void main() {
-	fragColor = vec4(1.0);
+	float randomness = pseudoRandom(id * 0.1);
+	float bias = id / 100.0;
+	float visibilityThreshold = randomness * 0.5 + bias;
+	if (visibilityThreshold > time * 3.0) discard;
+
+	fragColor = vec4(1.0); 
 }
 )glsl";

@@ -121,8 +121,8 @@ Glyph getGlyphForCharacter(char c) {
 	1/0;
 }
 
-GLuint createText(char *text, int *baseId, int *indiceCount) {
-	int charId = *baseId;
+GLuint createText(char *text, int *indiceCount) {
+	int charId = 0;
 	unsigned int totalSquareCount = 0;
 
 	TextPoint *points = NULL;

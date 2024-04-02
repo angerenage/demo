@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "shader.h"
 #include "galaxy.h"
@@ -30,6 +31,8 @@ void checkOpenGLError() {
 	}
 }
 
+float aspectRatio = 800.0 / 600.0;
+
 bool running = true;
 bool displayGalaxy = false;
 bool mousePressed = false;
@@ -53,6 +56,8 @@ void handleEvents(Display *display, Atom wmDelete) {
 				{
 					XConfigureEvent xce = event.xconfigure;
 					glViewport(0, 0, xce.width, xce.height);
+
+					aspectRatio = (float)xce.width / (float)xce.height;
 
 					projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
 				}
@@ -214,13 +219,18 @@ int main() {
 
 	Mesh planete = generateIcosphere();
 
-	int baseId = 0;
 	int indiceCount = 0;
-	GLuint t = createText("0123456789", &baseId, &indiceCount);
+	GLuint t = createText("0123456789", &indiceCount);
 	
 	float camDistance = 10.0f;
 
+	struct timespec start, end;
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	
 	while (running) {
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		float ftime = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
+		
 		handleEvents(display, wmDelete);
 
 		mat4 view = viewMatrix((vec3){camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)}, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
@@ -228,6 +238,9 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(textShader);
+
+		glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), aspectRatio);
+		glUniform1f(glGetUniformLocation(textShader, "time"), ftime);
 
 		glBindVertexArray(t);
 		glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, NULL);
