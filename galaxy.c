@@ -2,15 +2,13 @@
 
 static float distanceFromSpiral(const vec2* polarPoint, float a, float b, float theta_min, float theta_max) {
 	float r = polarPoint->x;
-	float theta = polarPoint->y;
 
-	// Adjust theta to ensure it is in the range [0, 2*PI)
-	theta = fmod(theta, 2 * M_PI);
+	float theta = fmod(polarPoint->y, 2 * M_PI);
 	if (theta < 0) {
 		theta += 2 * M_PI;
 	}
 
-	const float theta_step = 0.01;  // smaller step for more precision
+	const float theta_step = 0.01;
 	float minDistance = FLT_MAX;
 
 	// Iterate over the spiral to find the closest point

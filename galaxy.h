@@ -7,8 +7,8 @@
 #include "geometry.h"
 
 typedef struct starPoint_s {
-    vec3 position;
-    float density;
+	vec3 position;
+	float density;
 } StarPoint;
 
 StarPoint *generateGalaxy(unsigned int num_stars);

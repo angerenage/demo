@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "geometry.h"
+#include "glutils.h"
 
 typedef struct mesh_s {
 	GLuint VAO;

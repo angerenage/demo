@@ -1,15 +1,5 @@
 #include "shader.h"
 
-unsigned int galaxyShader = 0;
-unsigned int planeteShader = 0;
-unsigned int textShader = 0;
-
-void initShaders() {
-	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
-	planeteShader = compileShader(planeteVertShaderSrc, planeteGemoShaderSrc, planeteFragShaderSrc);
-	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
-}
-
 unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode) {
 	unsigned int vertex, geometry, fragment;
 	int success;
@@ -69,7 +59,7 @@ unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, con
 	return ID;
 }
 
-const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
+static const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 layout(location = 1) in float densityIn;
 
@@ -119,7 +109,7 @@ void main() {
 		}
 		
 		float maxSize = 200.0f;
-		float minSize = 10.0f;
+		float minSize = 15.0f;
 		gl_PointSize = mix(minSize, maxSize, correctedDensity * 3.0);
 	}
 }
@@ -194,7 +184,7 @@ void main() {
 
 // --------------------------- PLANETE SHADERS ---------------------------
 
-const char planeteVertShaderSrc[] = R"glsl(#version 330 core
+static const char planeteVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
 void main() {
@@ -202,10 +192,11 @@ void main() {
 }
 )glsl";
 
-const char planeteGemoShaderSrc[] = R"glsl(#version 330 core
+static const char planeteGemoShaderSrc[] = R"glsl(#version 330 core
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 128) out;
 
+out vec3 fragPosition;
 out vec3 fragNormal;
 
 uniform mat4 projection;
@@ -219,6 +210,7 @@ vec3 calculateNormal(vec3 point) {
 }
 
 void emitVertex(vec3 position) {
+	fragPosition = position;
 	fragNormal = calculateNormal(position);
 	gl_Position = projection * view * vec4(normalize(position), 1.0);
 	EmitVertex();
@@ -278,22 +270,39 @@ void main() {
 }
 )glsl";
 
-const char planeteFragShaderSrc[] = R"glsl(#version 330 core
+// https://www.ronja-tutorials.com/post/010-triplanar-mapping/
+static const char planeteFragShaderSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
+in vec3 fragPosition;
 in vec3 fragNormal;
 
 uniform vec3 lightDir;
+uniform sampler2D noiseTexture;
 
 void main() {
+	float scale = 0.75;
+	float sharpness = 64.0;
+
+	vec4 col_front = texture(noiseTexture, fragPosition.xy * scale + vec2(0.5, 0.5));
+	vec4 col_side = texture(noiseTexture, fragPosition.yz * scale + vec2(0.5, 0.5));
+	vec4 col_top = texture(noiseTexture, fragPosition.zx * scale + vec2(0.5, 0.5));
+
+	vec3 blendWeights = pow(abs(fragNormal), vec3(sharpness));
+	blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);
+
+	vec4 color = col_front * blendWeights.z + 
+				 col_side * blendWeights.x + 
+				 col_top * blendWeights.y;
+
 	float shadow = max(0.0, dot(lightDir, fragNormal));
-	fragColor = vec4(vec3(shadow), 1.0);
+	fragColor = shadow * color;
 }
 )glsl";
 
 // --------------------------- TEXT SHADERS ---------------------------
 
-const char textVertShaderSrc[] = R"glsl(#version 330 core
+static const char textVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec2 positionIn;
 layout(location = 1) in int idIn;
 
@@ -311,7 +320,7 @@ void main() {
 }
 )glsl";
 
-const char textFragShaderSrc[] = R"glsl(#version 330 core
+static const char textFragShaderSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 flat in int id;
@@ -331,3 +340,89 @@ void main() {
 	fragColor = vec4(1.0); 
 }
 )glsl";
+
+// --------------------------- NOISE SHADERS ---------------------------
+
+static const char postVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+void main() {
+	gl_Position = vec4(positionIn, 1.0);
+}
+)glsl";
+
+// Algorithm by patriciogonzalezvivo (https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83)
+static const char snoise[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+uniform float time;
+uniform vec2 resolution;
+const float warpAmount = 0.0;
+
+vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+
+float snoise(vec2 v) {
+	const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+	vec2 i  = floor(v + dot(v, C.yy));
+	vec2 x0 = v -   i + dot(i, C.xx);
+	vec2 i1;
+	i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+	vec4 x12 = x0.xyxy + C.xxzz;
+	x12.xy -= i1;
+	i = mod(i, 289.0);
+	vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0))
+	+ i.x + vec3(0.0, i1.x, 1.0));
+	vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+	m = m*m ;
+	m = m*m ;
+	vec3 x = 2.0 * fract(p * C.www) - 1.0;
+	vec3 h = abs(x) - 0.5;
+	vec3 ox = floor(x + 0.5);
+	vec3 a0 = x - ox;
+	m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+	vec3 g;
+	g.x  = a0.x  * x0.x  + h.x  * x0.y;
+	g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+	return 130.0 * dot(m, g);
+}
+
+float fractal_noise(vec2 p, int octaves, float persistence, float lacunarity) {
+	float total = 0.0;
+	float amplitude = 1.0;
+	float maxAmplitude = 0.0;
+	float frequency = 1.0;
+
+	for (int i = 0; i < octaves; i++) {
+		total += snoise(p * frequency) * amplitude;
+		maxAmplitude += amplitude;
+		amplitude *= persistence;
+		frequency *= lacunarity;
+	}
+
+	return total / maxAmplitude;
+}
+
+vec2 warp(vec2 p) {
+	float noise = snoise(p * 0.1 + time * 0.1);
+	return p + warpAmount * vec2(cos(noise + time), sin(noise + time));
+}
+
+void main() {
+	vec2 uv = gl_FragCoord.xy / resolution.xy;
+	vec2 warpedPosition = warp(uv * 10.0);
+	float noise = fractal_noise(warpedPosition, 4, 0.5, 2.0);
+	fragColor = vec4(vec3(noise + 1.0) / 2.0, 1.0);
+}
+)glsl";
+
+unsigned int galaxyShader = 0;
+unsigned int planeteShader = 0;
+unsigned int textShader = 0;
+unsigned int snoiseShader = 0;
+
+void initShaders() {
+	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
+	planeteShader = compileShader(planeteVertShaderSrc, planeteGemoShaderSrc, planeteFragShaderSrc);
+	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
+	snoiseShader = compileShader(postVertSrc, NULL, snoise);
+}

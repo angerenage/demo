@@ -516,11 +516,8 @@ static GLuint createTextVAO(const TextPoint* points, int pointCount, const unsig
 	glBufferData(GL_ARRAY_BUFFER, pointCount * sizeof(TextPoint), points, GL_STATIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
 
-	// Attribut pour la position
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TextPoint), (void*)offsetof(TextPoint, pos));
-
-	// Attribut pour l'identifiant
 	glEnableVertexAttribArray(1);
 	glVertexAttribIPointer(1, 1, GL_INT, sizeof(TextPoint), (void*)offsetof(TextPoint, id));
 

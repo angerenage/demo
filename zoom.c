@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "glutils.h"
 #include "shader.h"
 #include "galaxy.h"
 #include "planet.h"
@@ -31,7 +32,7 @@ void checkOpenGLError() {
 	}
 }
 
-float aspectRatio = 800.0 / 600.0;
+vec2 screenSize = {600.0, 800.0};
 
 bool running = true;
 bool displayGalaxy = false;
@@ -57,7 +58,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 					XConfigureEvent xce = event.xconfigure;
 					glViewport(0, 0, xce.width, xce.height);
 
-					aspectRatio = (float)xce.width / (float)xce.height;
+					screenSize = (vec2){(float)xce.width, (float)xce.height};
 
 					projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
 				}
@@ -204,6 +205,28 @@ int main() {
 
 	initShaders();
 
+	vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}};
+	unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
+	GLuint plane = createPositionVAO(planeVert, 4, planeInd, 6);
+
+	GLuint noiseTexture = createTexture(512, 512);
+	GLuint fbo = createFramebuffer(noiseTexture);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(snoiseShader);
+
+	glUniform2f(glGetUniformLocation(snoiseShader, "resolution"), 512.0, 512.0);
+	glUniform1f(glGetUniformLocation(snoiseShader, "time"), 0.0);
+
+	glBindVertexArray(plane);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+	glBindVertexArray(0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.1f, 1000.0f);
 
 	unsigned int num_stars = 30000;
@@ -237,7 +260,7 @@ int main() {
 
 		glUseProgram(textShader);
 
-		glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), aspectRatio);
+		glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
 		glUniform1f(glGetUniformLocation(textShader, "time"), ftime);
 
 		glBindVertexArray(t);
@@ -262,6 +285,10 @@ int main() {
 			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 			
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+			glUniform1i(glGetUniformLocation(planeteShader, "noiseTexture"), 0);
+
 			glUniform1i(glGetUniformLocation(planeteShader, "subdivisions"), 5);
 
 			glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
@@ -276,6 +303,9 @@ int main() {
 	}
 
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
+	if (plane) glDeleteVertexArrays(1, &plane);
+	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
+	if (fbo) glDeleteFramebuffers(1, &fbo);
 	freeMesh(&planete);
 
 	glXMakeCurrent(display, None, NULL);
