@@ -74,11 +74,12 @@ float polarDistance(float r1, float theta1, float r2, float theta2) {
 	return sqrt(r1 * r1 + r2 * r2 - 2 * r1 * r2 * cos(theta1 - theta2));
 }
 
-float segment_distance(const vec2* point) {
+float segment_distance(const vec3* point) {
 	float x_distance = fabs(point->x) - 1.0f;
 	float y_distance = fabs(point->y) - 0.1f;
+	float z_distance = fabs(point->z) - 0.1f;
 
-	return fmax(0.0f, x_distance) + fmax(0.0f, y_distance);
+	return fmax(0.0f, x_distance) + fmax(0.0f, y_distance) + fmax(0.0f, z_distance);
 }
 
 float gaussianBulge(float x, float y, float A, float sigma) {

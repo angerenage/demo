@@ -63,12 +63,14 @@ static const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 layout(location = 1) in float densityIn;
 
-uniform mat4 projection;
-uniform mat4 view;
-
 out float density;
 out vec3 position;
 flat out int star;
+
+uniform mat4 projection;
+uniform mat4 view;
+
+uniform float screenWidth;
 
 float rand(vec2 co) {
 	return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -95,7 +97,7 @@ void main() {
 	star = 0;
 
 	if (densityIn < 0.0f) { // Detecting quasar
-		gl_PointSize = 75.0f;
+		gl_PointSize = 60.0f * (screenWidth / 800.0);
 	}
 	else if (centerDist < 4.0f && smootherRand(positionIn.xz) > 1.5) {
 		star = 1;
@@ -108,9 +110,9 @@ void main() {
 			correctedDensity *= falloff;
 		}
 		
-		float maxSize = 200.0f;
-		float minSize = 15.0f;
-		gl_PointSize = mix(minSize, maxSize, correctedDensity * 3.0);
+		float maxSize = 75.0f;
+		float minSize = 10.0f;
+		gl_PointSize = min(mix(minSize, maxSize, ((correctedDensity * 7.0f) / centerDist) * 1.5) * (screenWidth / 800.0), maxSize);
 	}
 }
 )glsl";
@@ -143,9 +145,9 @@ void main() {
 	if (dist > 0.5f) discard;
 
 	if (density < 0.0f) { // Detecting quasar
-		float alpha = max(0.0, (1.0 - (dist * dist) * 4.2) + 0.05) * 0.8;
+		float alpha = max(0.0, (1.0 - (dist * dist) * 4.2) + 0.05) * 0.6;
 		alpha = min(alpha, 1.0);
-		fragColor = vec4(vec3(1.0, 1.0, 1.0), alpha);
+		fragColor = vec4(vec3(1.0), alpha);
 	}
 	else if (star == 1) {
 		fragColor = vec4(1.0f);

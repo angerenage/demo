@@ -273,6 +273,8 @@ int main() {
 			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
+			glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
+
 			glDepthMask(0x00);
 			glBindVertexArray(galaxyVAO);
 			glDrawArrays(GL_POINTS, 0, num_stars);
@@ -290,7 +292,6 @@ int main() {
 			glUniform1i(glGetUniformLocation(planeteShader, "noiseTexture"), 0);
 
 			glUniform1i(glGetUniformLocation(planeteShader, "subdivisions"), 5);
-
 			glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
 
 			glBindVertexArray(planete.VAO);

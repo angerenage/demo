@@ -49,7 +49,7 @@ StarPoint *generateGalaxy(unsigned int num_stars) {
 
 			float distance = distanceFromSpiral(&(vec2){r, angle}, 1.0f, b, 0.0f, theta_max) * 0.5f;
 			distance = fmin(distance, distanceFromSpiral(&(vec2){r, angle}, a2, b, M_PI, theta_max + M_PI) * 0.5f);
-			distance = fmin(distance, segment_distance(&(vec2){x, z}));
+			distance = fmin(distance, segment_distance(&(vec3){x, y, z}));
 
 			float density = lerp(0.0f, 0.5f, distance * 2.0f);
 			density *= fmax(height, 0.3);
