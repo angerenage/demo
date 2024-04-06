@@ -111,8 +111,8 @@ void main() {
 		}
 		
 		float maxSize = 75.0f;
-		float minSize = 10.0f;
-		gl_PointSize = min(mix(minSize, maxSize, ((correctedDensity * 7.0f) / centerDist) * 1.5) * (screenWidth / 800.0), maxSize);
+		float minSize = 8.0f;
+		gl_PointSize = min(maxSize, mix(minSize, maxSize, ((correctedDensity * 7.0f) / centerDist) * 1.5) * (screenWidth / 800.0));
 	}
 }
 )glsl";
@@ -145,7 +145,7 @@ void main() {
 	if (dist > 0.5f) discard;
 
 	if (density < 0.0f) { // Detecting quasar
-		float alpha = max(0.0, (1.0 - (dist * dist) * 4.2) + 0.05) * 0.6;
+		float alpha = max(0.0, (1.0 - (dist * dist) * 4.2) + 0.05) * 0.9;
 		alpha = min(alpha, 1.0);
 		fragColor = vec4(vec3(1.0), alpha);
 	}
@@ -184,9 +184,9 @@ void main() {
 }
 )glsl";
 
-// --------------------------- PLANETE SHADERS ---------------------------
+// --------------------------- SPHERE SHADERS ---------------------------
 
-static const char planeteVertShaderSrc[] = R"glsl(#version 330 core
+static const char sphereVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
 void main() {
@@ -194,7 +194,7 @@ void main() {
 }
 )glsl";
 
-static const char planeteGemoShaderSrc[] = R"glsl(#version 330 core
+static const char sphereGemoShaderSrc[] = R"glsl(#version 330 core
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 128) out;
 
@@ -205,16 +205,16 @@ uniform mat4 projection;
 uniform mat4 view;
 uniform int subdivisions;
 
-const int MAX_SUBDIVISIONS = 5;
+const int MAX_SUBDIVISIONS = 6;
 
 vec3 calculateNormal(vec3 point) {
 	return normalize(point);
 }
 
 void emitVertex(vec3 position) {
-	fragPosition = position;
+	fragPosition = position * 2;
 	fragNormal = calculateNormal(position);
-	gl_Position = projection * view * vec4(normalize(position), 1.0);
+	gl_Position = projection * view * vec4(normalize(position) * 2, 1.0);
 	EmitVertex();
 }
 
@@ -272,8 +272,10 @@ void main() {
 }
 )glsl";
 
+// --------------------------- STAR SHADERS ---------------------------
+
 // https://www.ronja-tutorials.com/post/010-triplanar-mapping/
-static const char planeteFragShaderSrc[] = R"glsl(#version 330 core
+static const char starFragShaderSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in vec3 fragPosition;
@@ -283,22 +285,25 @@ uniform vec3 lightDir;
 uniform sampler2D noiseTexture;
 
 void main() {
-	float scale = 0.75;
-	float sharpness = 64.0;
+	float sharpness = 1.0;
 
-	vec4 col_front = texture(noiseTexture, fragPosition.xy * scale + vec2(0.5, 0.5));
-	vec4 col_side = texture(noiseTexture, fragPosition.yz * scale + vec2(0.5, 0.5));
-	vec4 col_top = texture(noiseTexture, fragPosition.zx * scale + vec2(0.5, 0.5));
+	vec4 colFront = texture(noiseTexture, fragPosition.xy / 2.0 + vec2(0.5, 0.5));
+	vec4 colSide = texture(noiseTexture, fragPosition.yz / 2.0 + vec2(0.5, 0.5));
+	vec4 colTop = texture(noiseTexture, fragPosition.zx / 2.0 + vec2(0.5, 0.5));
 
 	vec3 blendWeights = pow(abs(fragNormal), vec3(sharpness));
 	blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);
 
-	vec4 color = col_front * blendWeights.z + 
-				 col_side * blendWeights.x + 
-				 col_top * blendWeights.y;
+	vec4 noise = colFront * blendWeights.z +
+				 colSide * blendWeights.x +
+				 colTop * blendWeights.y;
 
-	float shadow = max(0.0, dot(lightDir, fragNormal));
-	fragColor = shadow * color;
+	float lum = abs((noise.r * 2.0) - 1.0);
+
+	vec3 hotColor = mix(vec3(1.0, 0.86, 0.73), vec3(1.0, 0.45, 0.0), min(1.0, lum * 10.0 + 0.5));
+	vec3 color = mix(hotColor, vec3(0.82, 0.2, 0.01), lum * 2.0);
+
+	fragColor = vec4(color, 1.0);
 }
 )glsl";
 
@@ -413,18 +418,18 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / resolution.xy;
 	vec2 warpedPosition = warp(uv * 10.0);
 	float noise = fractal_noise(warpedPosition, 4, 0.5, 2.0);
-	fragColor = vec4(vec3(noise + 1.0) / 2.0, 1.0);
+	fragColor = vec4(vec3((noise + 1.0) / 2.0), 1.0);
 }
 )glsl";
 
 unsigned int galaxyShader = 0;
-unsigned int planeteShader = 0;
+unsigned int starShader = 0;
 unsigned int textShader = 0;
 unsigned int snoiseShader = 0;
 
 void initShaders() {
 	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
-	planeteShader = compileShader(planeteVertShaderSrc, planeteGemoShaderSrc, planeteFragShaderSrc);
+	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
 	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
 }

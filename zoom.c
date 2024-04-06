@@ -196,7 +196,6 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	glEnable(GL_BLEND);
 
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -209,7 +208,8 @@ int main() {
 	unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
 	GLuint plane = createPositionVAO(planeVert, 4, planeInd, 6);
 
-	GLuint noiseTexture = createTexture(512, 512);
+	glViewport(0, 0, 1024, 1024);
+	GLuint noiseTexture = createTexture(1024, 1024);
 	GLuint fbo = createFramebuffer(noiseTexture);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -225,6 +225,7 @@ int main() {
 	glBindVertexArray(0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, screenSize.x, screenSize.y);
 
 
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.1f, 1000.0f);
@@ -238,7 +239,7 @@ int main() {
 	}
 	else running = false;
 
-	Mesh planete = generateIcosphere();
+	Mesh star = generateIcosphere();
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
@@ -268,6 +269,8 @@ int main() {
 		
 		if (displayGalaxy) {
 			// Drawing galaxy
+			glEnable(GL_BLEND);
+
 			glUseProgram(galaxyShader);
 
 			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
@@ -279,23 +282,25 @@ int main() {
 			glBindVertexArray(galaxyVAO);
 			glDrawArrays(GL_POINTS, 0, num_stars);
 			glDepthMask(0xFF);
+
+			glDisable(GL_BLEND);
 		}
 		else {
-			// Drawing planetes
-			glUseProgram(planeteShader);
+			// Drawing star
+			glUseProgram(starShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-			glUniformMatrix4fv(glGetUniformLocation(planeteShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 			
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			glUniform1i(glGetUniformLocation(planeteShader, "noiseTexture"), 0);
+			glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
 
-			glUniform1i(glGetUniformLocation(planeteShader, "subdivisions"), 5);
-			glUniform3f(glGetUniformLocation(planeteShader, "lightDir"), 0.0, 1.0, 0.0);
+			glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
+			glUniform3f(glGetUniformLocation(starShader, "lightDir"), 0.0, 1.0, 0.0);
 
-			glBindVertexArray(planete.VAO);
-			glDrawElements(GL_TRIANGLES, planete.indexCount, GL_UNSIGNED_INT, NULL);
+			glBindVertexArray(star.VAO);
+			glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
 		}
 
 		checkOpenGLError();
@@ -307,7 +312,7 @@ int main() {
 	if (plane) glDeleteVertexArrays(1, &plane);
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
 	if (fbo) glDeleteFramebuffers(1, &fbo);
-	freeMesh(&planete);
+	freeMesh(&star);
 
 	glXMakeCurrent(display, None, NULL);
 	glXDestroyContext(display, glc);

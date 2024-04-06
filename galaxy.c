@@ -23,6 +23,8 @@ static float distanceFromSpiral(const vec2* polarPoint, float a, float b, float 
 }
 
 StarPoint *generateGalaxy(unsigned int num_stars) {
+	srand(8);
+
 	StarPoint *stars = (StarPoint*)malloc(sizeof(StarPoint) * num_stars);
 	if (stars) {
 		float r_max = 5.0f;						// Galaxy radius
@@ -38,7 +40,7 @@ StarPoint *generateGalaxy(unsigned int num_stars) {
 
 		for (int i = 0; i < num_stars - 1; i++) {
 			float angle = ((float)rand() / (float)RAND_MAX) * 2 * M_PI;
-			float r = ((float)rand() / (float)RAND_MAX) * r_max;
+			float r = sqrt((float)rand() / (float)RAND_MAX) * r_max;
 
 			float x = r * cos(angle);
 			float z = r * sin(angle);
@@ -49,7 +51,7 @@ StarPoint *generateGalaxy(unsigned int num_stars) {
 
 			float distance = distanceFromSpiral(&(vec2){r, angle}, 1.0f, b, 0.0f, theta_max) * 0.5f;
 			distance = fmin(distance, distanceFromSpiral(&(vec2){r, angle}, a2, b, M_PI, theta_max + M_PI) * 0.5f);
-			distance = fmin(distance, segment_distance(&(vec3){x, y, z}));
+			distance = fmin(distance, segment_distance(&(vec3){x, y, z}) / 2.0f);
 
 			float density = lerp(0.0f, 0.5f, distance * 2.0f);
 			density *= fmax(height, 0.3);

@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 extern unsigned int galaxyShader;
-extern unsigned int planeteShader;
+extern unsigned int starShader;
 extern unsigned int textShader;
 extern unsigned int snoiseShader;
 
