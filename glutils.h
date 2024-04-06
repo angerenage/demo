@@ -8,4 +8,5 @@
 GLuint createTexture(int width, int height);
 GLuint createFramebuffer(GLuint texture);
 
-GLuint createPositionVAO(const vec3* vertices, int vertexCount, const int* indices, int indexCount);
+GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *indices, int indexCount);
+GLuint createVAO(const vec3 *vertices, int vertexCount);

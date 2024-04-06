@@ -25,7 +25,7 @@ GLuint createFramebuffer(GLuint texture) {
 	return fbo;
 }
 
-GLuint createPositionVAO(const vec3* vertices, int vertexCount, const int* indices, int indexCount) {
+GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *sindices, int indexCount) {
 	GLuint vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -38,6 +38,24 @@ GLuint createPositionVAO(const vec3* vertices, int vertexCount, const int* indic
 
 	glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec3), vertices, GL_STATIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(int), indices, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
+
+	glBindVertexArray(0);
+
+	return vao;
+}
+
+GLuint createVAO(const vec3 *vertices, int vertexCount) {
+	GLuint vao, vbo;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);

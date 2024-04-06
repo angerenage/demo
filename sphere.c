@@ -78,7 +78,7 @@ Mesh generateIcosphere(int subdivisions) {
 		indexCount = newIndicesCount;
 	}
 
-	GLuint vao = createPositionVAO(vertices, vertexCount, indices, indexCount);
+	GLuint vao = createIndexedVAO(vertices, vertexCount, indices, indexCount);
 
 	Mesh mesh = {vao, vertices, vertexCount, indices, indexCount};
 	return mesh;
