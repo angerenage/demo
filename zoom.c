@@ -240,7 +240,6 @@ int main() {
 	else running = false;
 
 	Mesh star = generateIcosphere(2);
-	GLuint bloom = createVAO(&(vec3){0.0, 0.0, 0.0}, 1);
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
@@ -328,7 +327,6 @@ int main() {
 	if (fbo) glDeleteFramebuffers(1, &fbo);
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
 	if (plane) glDeleteVertexArrays(1, &plane);
-	if (bloom) glDeleteVertexArrays(1, &bloom);
 	freeMesh(&star);
 
 	glXMakeCurrent(display, None, NULL);
