@@ -85,3 +85,7 @@ float segment_distance(const vec3* point) {
 float gaussianBulge(float x, float y, float A, float sigma) {
 	return A * exp(-(x*x + y*y) / (2 * sigma * sigma));
 }
+
+float length(vec3 p) {
+	return sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+}

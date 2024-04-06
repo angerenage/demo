@@ -59,6 +59,8 @@ unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, con
 	return ID;
 }
 
+// --------------------------- GALAXY SHADERS ---------------------------
+
 static const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 layout(location = 1) in float densityIn;
@@ -422,14 +424,52 @@ void main() {
 }
 )glsl";
 
+// --------------------------- BLOOM POINT SHADERS ---------------------------
+
+static const char bloomPointVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+out vec2 texCoords;
+
+uniform mat4 projection;
+uniform mat4 view;
+uniform float bloomRadius;
+
+void main() {
+	vec3 viewRight = normalize(vec3(view[0][0], view[1][0], view[2][0]));
+	vec3 viewUp = normalize(vec3(view[0][1], view[1][1], view[2][1]));
+
+	float distance = length((view * vec4(vec3(0.0), 1.0)).xyz);
+	float scale = bloomRadius / distance;
+
+	vec3 position = (positionIn.x * bloomRadius * viewRight + positionIn.y * bloomRadius * viewUp) * scale;
+
+	gl_Position = projection * view * vec4(position, 1.0);
+	texCoords = positionIn.xy;
+}
+)glsl";
+
+static const char bloomPointFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec2 texCoords;
+
+void main() {
+	if (length(texCoords) > 1.0) discard;
+	fragColor = vec4(1.0, 0.0, 0.0, (1.0 - length(texCoords)) * 1.5);
+}
+)glsl";
+
 unsigned int galaxyShader = 0;
 unsigned int starShader = 0;
 unsigned int textShader = 0;
 unsigned int snoiseShader = 0;
+unsigned int bloomPointShader = 0;
 
 void initShaders() {
 	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
 	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
 	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
+	bloomPointShader = compileShader(bloomPointVertSrc, NULL, bloomPointFragSrc);
 }

@@ -7,6 +7,7 @@ extern unsigned int galaxyShader;
 extern unsigned int starShader;
 extern unsigned int textShader;
 extern unsigned int snoiseShader;
+extern unsigned int bloomPointShader;
 
 void initShaders();
 

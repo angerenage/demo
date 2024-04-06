@@ -206,7 +206,7 @@ int main() {
 
 	vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}};
 	unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
-	GLuint plane = createPositionVAO(planeVert, 4, planeInd, 6);
+	GLuint plane = createIndexedVAO(planeVert, 4, planeInd, 6);
 
 	glViewport(0, 0, 1024, 1024);
 	GLuint noiseTexture = createTexture(1024, 1024);
@@ -240,6 +240,7 @@ int main() {
 	else running = false;
 
 	Mesh star = generateIcosphere(2);
+	GLuint bloom = createVAO(&(vec3){0.0, 0.0, 0.0}, 1);
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
@@ -255,7 +256,8 @@ int main() {
 		
 		handleEvents(display, wmDelete);
 
-		mat4 view = viewMatrix((vec3){camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)}, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
+		vec3 camPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
+		mat4 view = viewMatrix(camPos, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -291,7 +293,7 @@ int main() {
 
 			glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-			
+
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, noiseTexture);
 			glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
@@ -301,6 +303,20 @@ int main() {
 
 			glBindVertexArray(star.VAO);
 			glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
+
+
+			glEnable(GL_BLEND);
+
+			glUseProgram(bloomPointShader);
+
+			glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform1f(glGetUniformLocation(bloomPointShader, "bloomRadius"), 5.5);
+
+			glBindVertexArray(plane);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+
+			glDisable(GL_BLEND);
 		}
 
 		checkOpenGLError();
@@ -308,10 +324,11 @@ int main() {
 		glXSwapBuffers(display, win);
 	}
 
-	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
-	if (plane) glDeleteVertexArrays(1, &plane);
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
 	if (fbo) glDeleteFramebuffers(1, &fbo);
+	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
+	if (plane) glDeleteVertexArrays(1, &plane);
+	if (bloom) glDeleteVertexArrays(1, &bloom);
 	freeMesh(&star);
 
 	glXMakeCurrent(display, None, NULL);

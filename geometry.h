@@ -28,3 +28,5 @@ float lerp(float a, float b, float t);
 float polarDistance(float r1, float theta1, float r2, float theta2);
 float segment_distance(const vec3* point);
 float gaussianBulge(float x, float y, float A, float sigma);
+
+float length(vec3 p);

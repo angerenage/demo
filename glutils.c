@@ -25,7 +25,7 @@ GLuint createFramebuffer(GLuint texture) {
 	return fbo;
 }
 
-GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *sindices, int indexCount) {
+GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *indices, int indexCount) {
 	GLuint vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
