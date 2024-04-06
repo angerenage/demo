@@ -18,6 +18,6 @@ typedef struct mesh_s {
 	int indexCount;
 } Mesh;
 
-Mesh generateIcosphere();
+Mesh generateIcosphere(int subdivisions);
 
 void freeMesh(Mesh* mesh);

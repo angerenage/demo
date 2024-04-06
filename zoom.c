@@ -11,7 +11,7 @@
 #include "glutils.h"
 #include "shader.h"
 #include "galaxy.h"
-#include "planet.h"
+#include "sphere.h"
 #include "text.h"
 
 void checkOpenGLError() {
@@ -239,7 +239,7 @@ int main() {
 	}
 	else running = false;
 
-	Mesh star = generateIcosphere();
+	Mesh star = generateIcosphere(2);
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
