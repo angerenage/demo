@@ -23,10 +23,7 @@ mat4 viewMatrix(vec3 position, vec3 focus, vec3 up);
 vec3 substracteVector(vec3 v1, vec3 v2);
 vec3 normalize(vec3 v);
 vec3 crossProduct(vec3 v1, vec3 v2);
+float length(vec3 p);
 
 float lerp(float a, float b, float t);
-float polarDistance(float r1, float theta1, float r2, float theta2);
-float segment_distance(const vec3* point);
 float gaussianBulge(float x, float y, float A, float sigma);
-
-float length(vec3 p);

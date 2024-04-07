@@ -278,6 +278,7 @@ int main() {
 			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
 			glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
+			glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
 
 			glDepthMask(0x00);
 			glBindVertexArray(galaxyVAO);

@@ -63,7 +63,10 @@ unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, con
 
 static const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
-layout(location = 1) in float densityIn;
+layout(location = 1) in float heightIn;
+
+#define M_PI 3.1415926535897932384626433832795
+#define FLT_MAX 1.0 / 0.0
 
 out float density;
 out vec3 position;
@@ -73,6 +76,7 @@ uniform mat4 projection;
 uniform mat4 view;
 
 uniform float screenWidth;
+uniform float r_max;
 
 float rand(vec2 co) {
 	return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -90,31 +94,73 @@ float smootherRand(vec2 co) {
 	return total;
 }
 
-void main() {
-	gl_Position = projection * view * vec4(positionIn, 1.0);
-	float centerDist = length(positionIn.xz);
+float distanceFromSpiral(vec2 polarPoint, float a, float b, float theta_min, float theta_max) {
+	float minDistance = FLT_MAX;
 
-	density = densityIn;
-	position = positionIn;
-	star = 0;
+	float theta_start = polarPoint.x;
+	if (polarPoint.x <= theta_min) theta_start += 2 * M_PI;
 
-	if (densityIn < 0.0f) { // Detecting quasar
-		gl_PointSize = 60.0f * (screenWidth / 800.0);
+	for (float t = theta_start; t <= theta_max; t += 2 * M_PI) {
+		float r_spiral = a * exp(b * t);
+
+		float distance = abs(polarPoint.y - r_spiral);
+		minDistance = min(minDistance, distance);
 	}
-	else if (centerDist < 4.0f && smootherRand(positionIn.xz) > 1.5) {
-		star = 1;
-		gl_PointSize = 2.0f;
+
+	return minDistance;
+}
+
+float segment_distance(vec3 point) {
+	float x_distance = abs(point.x) - 0.5f;
+	float y_distance = abs(point.y) - 0.05f;
+	float z_distance = abs(point.z) - 0.05f;
+
+	return max(0.0f, x_distance) + max(0.0f, y_distance) + max(0.0f, z_distance);
+}
+
+void main() {
+	if (isnan(heightIn)) { // Detecting quasar
+		density = -1.0;
+		gl_PointSize = 60.0f * (screenWidth / 800.0);
+		gl_Position = projection * view * vec4(0.0, 0.0, 0.0, 1.0);
 	}
 	else {
-		float correctedDensity = densityIn;
-		if (centerDist > 4.0f) {
-			float falloff = (5.0f - centerDist);
-			correctedDensity *= falloff;
-		}
+		float x = positionIn.y * cos(positionIn.x);
+		float y = positionIn.z;
+		float z = positionIn.y * sin(positionIn.x);
+
+		gl_Position = projection * view * vec4(vec3(x, y, z), 1.0);
+
+		float threshold_r = 4.0f;				// Density radius threshold
+		float b = log(r_max) / (4.0f * M_PI);	// Thigthness of spiral 1
+		float a2 = 1.0 / exp(b * M_PI);			// Thigthness of spiral 2
+		float theta_max = 5.0f * M_PI;
+
+		float distance = distanceFromSpiral(positionIn.xy, 1.0f, b, 0.0, theta_max) * 0.5f;
+		distance = min(distance, distanceFromSpiral(positionIn.xy, a2, b, M_PI, theta_max + M_PI) * 0.5f);
+		distance = min(distance, segment_distance(vec3(x, y, z) / 2.0f));
+
+		density = mix(0.0f, 0.5f, distance * 2.0f);
+		density *= max(heightIn, 0.3);
+
+		position = vec3(x, y, z);
+		star = 0;
 		
-		float maxSize = 75.0f;
-		float minSize = 8.0f;
-		gl_PointSize = min(maxSize, mix(minSize, maxSize, ((correctedDensity * 7.0f) / centerDist) * 1.5) * (screenWidth / 800.0));
+		if (positionIn.y < threshold_r && smootherRand(positionIn.xz) > 1.5) {
+			star = 1;
+			gl_PointSize = 2.0f;
+		}
+		else {
+			float correctedDensity = density;
+			if (positionIn.y > threshold_r) {
+				float falloff = (5.0f - positionIn.y);
+				correctedDensity *= falloff;
+			}
+			
+			float maxSize = 75.0f;
+			float minSize = 8.0f;
+			gl_PointSize = min(maxSize, mix(minSize, maxSize, ((correctedDensity * 7.0f) / positionIn.y) * 1.5) * (screenWidth / 800.0));
+		}
 	}
 }
 )glsl";
