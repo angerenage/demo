@@ -297,12 +297,12 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
+				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
+				glUniform1f(glGetUniformLocation(starShader, "radius"), 2.0);
+
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D, noiseTexture);
 				glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
-
-				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
-				glUniform3f(glGetUniformLocation(starShader, "lightDir"), 0.0, 1.0, 0.0);
 
 				glBindVertexArray(star.VAO);
 				glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
@@ -310,11 +310,11 @@ int main() {
 
 				glEnable(GL_BLEND);
 
-				glUseProgram(bloomPointShader);
+				glUseProgram(bloomShader);
 
-				glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform1f(glGetUniformLocation(bloomPointShader, "bloomRadius"), 5.5);
+				glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), 5.5);
 
 				glBindVertexArray(plane);
 				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
@@ -323,7 +323,22 @@ int main() {
 				break;
 
 			case 2:
-				// Display planet
+				// Drawing planet
+				glUseProgram(planetShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(planetShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(planetShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glUniform1i(glGetUniformLocation(planetShader, "subdivisions"), 6);
+				glUniform1f(glGetUniformLocation(planetShader, "radius"), 1.0);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, noiseTexture);
+				glUniform1i(glGetUniformLocation(planetShader, "noiseTexture"), 0);
+				glUniform3f(glGetUniformLocation(planetShader, "lightDir"), 0.0, 1.0, 0.0);
+
+				glBindVertexArray(planet.VAO);
+				glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
 				break;
 		}
 

@@ -252,6 +252,7 @@ out vec3 fragNormal;
 uniform mat4 projection;
 uniform mat4 view;
 uniform int subdivisions;
+uniform float radius;
 
 const int MAX_SUBDIVISIONS = 6;
 
@@ -260,9 +261,9 @@ vec3 calculateNormal(vec3 point) {
 }
 
 void emitVertex(vec3 position) {
-	fragPosition = position * 2;
+	fragPosition = position * radius;
 	fragNormal = calculateNormal(position);
-	gl_Position = projection * view * vec4(normalize(position) * 2, 1.0);
+	gl_Position = projection * view * vec4(normalize(position) * radius, 1.0);
 	EmitVertex();
 }
 
@@ -329,7 +330,6 @@ out vec4 fragColor;
 in vec3 fragPosition;
 in vec3 fragNormal;
 
-uniform vec3 lightDir;
 uniform sampler2D noiseTexture;
 
 void main() {
@@ -352,6 +352,35 @@ void main() {
 	vec3 color = mix(hotColor, vec3(0.82, 0.2, 0.01), lum * 2.0);
 
 	fragColor = vec4(color, 1.0);
+}
+)glsl";
+
+// --------------------------- PLANET SHADERS ---------------------------
+
+static const char planetFragShaderSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec3 fragPosition;
+in vec3 fragNormal;
+
+uniform vec3 lightDir;
+uniform sampler2D noiseTexture;
+
+void main() {
+	float sharpness = 1.0;
+
+	vec4 colFront = texture(noiseTexture, fragPosition.xy * 2.0 + vec2(0.5, 0.5));
+	vec4 colSide = texture(noiseTexture, fragPosition.yz * 2.0 + vec2(0.5, 0.5));
+	vec4 colTop = texture(noiseTexture, fragPosition.zx * 2.0 + vec2(0.5, 0.5));
+
+	vec3 blendWeights = pow(abs(fragNormal), vec3(sharpness));
+	blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);
+
+	vec4 noise = colFront * blendWeights.z +
+				 colSide * blendWeights.x +
+				 colTop * blendWeights.y;
+
+	fragColor = vec4(vec3(noise) * dot(fragNormal, lightDir), 1.0);
 }
 )glsl";
 
@@ -470,9 +499,9 @@ void main() {
 }
 )glsl";
 
-// --------------------------- BLOOM POINT SHADERS ---------------------------
+// --------------------------- BLOOM SHADERS ---------------------------
 
-static const char bloomPointVertSrc[] = R"glsl(#version 330 core
+static const char bloomVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
 out vec2 texCoords;
@@ -495,7 +524,7 @@ void main() {
 }
 )glsl";
 
-static const char bloomPointFragSrc[] = R"glsl(#version 330 core
+static const char bloomFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in vec2 texCoords;
@@ -508,14 +537,16 @@ void main() {
 
 unsigned int galaxyShader = 0;
 unsigned int starShader = 0;
+unsigned int planetShader = 0;
 unsigned int textShader = 0;
 unsigned int snoiseShader = 0;
-unsigned int bloomPointShader = 0;
+unsigned int bloomShader = 0;
 
 void initShaders() {
 	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
 	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
+	planetShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, planetFragShaderSrc);
 	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
-	bloomPointShader = compileShader(bloomPointVertSrc, NULL, bloomPointFragSrc);
+	bloomShader = compileShader(bloomVertSrc, NULL, bloomFragSrc);
 }

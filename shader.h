@@ -5,9 +5,10 @@
 
 extern unsigned int galaxyShader;
 extern unsigned int starShader;
+extern unsigned int planetShader;
 extern unsigned int textShader;
 extern unsigned int snoiseShader;
-extern unsigned int bloomPointShader;
+extern unsigned int bloomShader;
 
 void initShaders();
 
