@@ -35,7 +35,7 @@ void checkOpenGLError() {
 vec2 screenSize = {600.0, 800.0};
 
 bool running = true;
-bool displayGalaxy = false;
+int displayedScene = 0;
 bool mousePressed = false;
 int lastX = 0, lastY = 0;
 float cameraAngleX = -0.75f, cameraAngleY = 0.0f;
@@ -70,7 +70,8 @@ void handleEvents(Display *display, Atom wmDelete) {
 					running = false;
 				}
 				else if (key == XK_Tab) {
-					displayGalaxy = !displayGalaxy;
+					displayedScene++;
+					if (displayedScene >= 3) displayedScene = 0;
 				}
 				break;
 
@@ -240,6 +241,7 @@ int main() {
 	else running = false;
 
 	Mesh star = generateIcosphere(2);
+	Mesh planet = generateIcosphere(2);
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
@@ -268,55 +270,61 @@ int main() {
 		glBindVertexArray(t);
 		glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, NULL);
 		
-		if (displayGalaxy) {
-			// Drawing galaxy
-			glEnable(GL_BLEND);
+		switch (displayedScene) {
+			case 0: // Drawing galaxy
+				glEnable(GL_BLEND);
 
-			glUseProgram(galaxyShader);
+				glUseProgram(galaxyShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-			glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
-			glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
+				glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
+				glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
 
-			glDepthMask(0x00);
-			glBindVertexArray(galaxyVAO);
-			glDrawArrays(GL_POINTS, 0, num_stars);
-			glDepthMask(0xFF);
+				glDepthMask(0x00);
+				glBindVertexArray(galaxyVAO);
+				glDrawArrays(GL_POINTS, 0, num_stars);
+				glDepthMask(0xFF);
 
-			glDisable(GL_BLEND);
-		}
-		else {
-			// Drawing star
-			glUseProgram(starShader);
+				glDisable(GL_BLEND);
+				break;
 
-			glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-			glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			case 1:
+				// Drawing star
+				glUseProgram(starShader);
 
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
+				glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-			glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
-			glUniform3f(glGetUniformLocation(starShader, "lightDir"), 0.0, 1.0, 0.0);
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, noiseTexture);
+				glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
 
-			glBindVertexArray(star.VAO);
-			glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
+				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
+				glUniform3f(glGetUniformLocation(starShader, "lightDir"), 0.0, 1.0, 0.0);
+
+				glBindVertexArray(star.VAO);
+				glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
 
 
-			glEnable(GL_BLEND);
+				glEnable(GL_BLEND);
 
-			glUseProgram(bloomPointShader);
+				glUseProgram(bloomPointShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-			glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-			glUniform1f(glGetUniformLocation(bloomPointShader, "bloomRadius"), 5.5);
+				glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(bloomPointShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniform1f(glGetUniformLocation(bloomPointShader, "bloomRadius"), 5.5);
 
-			glBindVertexArray(plane);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+				glBindVertexArray(plane);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 
-			glDisable(GL_BLEND);
+				glDisable(GL_BLEND);
+				break;
+
+			case 2:
+				// Display planet
+				break;
 		}
 
 		checkOpenGLError();
