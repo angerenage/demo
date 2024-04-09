@@ -12,6 +12,7 @@
 #include "shader.h"
 #include "galaxy.h"
 #include "sphere.h"
+#include "water.h"
 #include "text.h"
 
 void checkOpenGLError() {
@@ -71,7 +72,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 				}
 				else if (key == XK_Tab) {
 					displayedScene++;
-					if (displayedScene >= 3) displayedScene = 0;
+					if (displayedScene >= 4) displayedScene = 0;
 				}
 				break;
 
@@ -243,6 +244,9 @@ int main() {
 	Mesh star = generateIcosphere(2);
 	Mesh planet = generateIcosphere(2);
 
+	int waterIndexNumber = 0;
+	GLuint water = generateGrid((vec2){2.0, 2.0}, 3, &waterIndexNumber);
+
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
 	
@@ -339,6 +343,19 @@ int main() {
 
 				glBindVertexArray(planet.VAO);
 				glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
+				break;
+
+			case 3:
+				// Drawing water
+				glUseProgram(debugShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(debugShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(debugShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glUniform1f(glGetUniformLocation(debugShader, "time"), ftime);
+
+				glBindVertexArray(water);
+				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);
 				break;
 		}
 

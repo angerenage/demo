@@ -535,12 +535,37 @@ void main() {
 }
 )glsl";
 
+// --------------------------- DEBUG SHADERS ---------------------------
+
+static const char debugVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+uniform mat4 projection;
+uniform mat4 view;
+
+uniform float time;
+
+void main() {
+	gl_Position = projection * view * vec4(positionIn + vec3(0.0, sin(time * 6.28 + positionIn.x), 0.0), 1.0);
+}
+)glsl";
+
+static const char debugFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+void main() {
+	fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+)glsl";
+
 unsigned int galaxyShader = 0;
 unsigned int starShader = 0;
 unsigned int planetShader = 0;
 unsigned int textShader = 0;
 unsigned int snoiseShader = 0;
 unsigned int bloomShader = 0;
+
+unsigned int debugShader = 0;
 
 void initShaders() {
 	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
@@ -549,4 +574,6 @@ void initShaders() {
 	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
 	bloomShader = compileShader(bloomVertSrc, NULL, bloomFragSrc);
+
+	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
