@@ -497,40 +497,11 @@ Glyph getGlyphForCharacter(wchar_t c) {
 	};
 }
 
-typedef struct textPoint_s {
-	vec2 pos;
-	int id;
-} TextPoint;
-
-static GLuint createTextVAO(const TextPoint* points, int pointCount, const unsigned int* indices, int indexCount) {
-	GLuint vao, vbo, ebo;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-
-	glBufferData(GL_ARRAY_BUFFER, pointCount * sizeof(TextPoint), points, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(TextPoint), (void*)offsetof(TextPoint, pos));
-	glEnableVertexAttribArray(1);
-	glVertexAttribIPointer(1, 1, GL_INT, sizeof(TextPoint), (void*)offsetof(TextPoint, id));
-
-	glBindVertexArray(0);
-
-	return vao;
-}
-
 GLuint createText(wchar_t *text, int *indiceCount) {
 	int charId = 0;
 	unsigned int totalSquareCount = 0;
 
-	TextPoint *points = NULL;
+	vec3 *points = NULL;
 	unsigned int *indices = NULL;
 	unsigned int pointCount = 0;
 	unsigned int indexCount = 0;
@@ -541,13 +512,14 @@ GLuint createText(wchar_t *text, int *indiceCount) {
 		int squareNumber = 0;
 		CharSquare *squares = createCharacter(g, &charId, &squareNumber);
 		if (squareNumber > 0 && squares) {
-			points = realloc(points, (pointCount + squareNumber * 4) * sizeof(TextPoint));
+			points = realloc(points, (pointCount + squareNumber * 4) * sizeof(vec3));
 			indices = realloc(indices, (indexCount + squareNumber * 6) * sizeof(unsigned int));
 
 			for (int i = 0; i < squareNumber; i++) {
 				for (int j = 0; j < 4; j++) { // Each square has 4 vertices
-					points[pointCount].pos = squares[i].p[j];
-					points[pointCount].id = squares[i].id;
+					points[pointCount].x = squares[i].p[j].x;
+					points[pointCount].y = squares[i].p[j].y;
+					points[pointCount].z = squares[i].id;
 					pointCount++;
 				}
 				for (int k = 0; k < 6; k++) { // Each square has 6 indices
@@ -563,7 +535,7 @@ GLuint createText(wchar_t *text, int *indiceCount) {
 	}
 
 	*indiceCount = indexCount;
-	GLuint vao = createTextVAO(points, pointCount, indices, indexCount);
+	GLuint vao = createIndexedVAO(points, pointCount, indices, indexCount);
 
 	free(points);
 	free(indices);

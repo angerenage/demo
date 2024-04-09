@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "geometry.h"
+#include "glutils.h"
 
 typedef struct glyph_s {
 	uint8_t c[5];

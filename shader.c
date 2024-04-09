@@ -387,17 +387,16 @@ void main() {
 // --------------------------- TEXT SHADERS ---------------------------
 
 static const char textVertShaderSrc[] = R"glsl(#version 330 core
-layout(location = 0) in vec2 positionIn;
-layout(location = 1) in int idIn;
+layout(location = 0) in vec3 positionIn;
 
-flat out int id;
+out float id;
 
 uniform float aspectRatio;
 
 void main() {
-	id = idIn;
+	id = positionIn.z;
 
-	vec2 adjustedPosition = positionIn / 10.0f;
+	vec2 adjustedPosition = positionIn.xy / 10.0f;
 	adjustedPosition.x /= aspectRatio;
 
 	gl_Position = vec4(adjustedPosition, 0.0, 1.0) - vec4(0.90f, 0.80f, 0.0, 0.0);
@@ -407,7 +406,7 @@ void main() {
 static const char textFragShaderSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
-flat in int id;
+in float id;
 
 uniform float time;
 
