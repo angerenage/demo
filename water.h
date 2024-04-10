@@ -5,3 +5,4 @@
 #include "glutils.h"
 
 GLuint generateGrid(vec2 size, int subdivision, int *vertexNbr);
+GLuint createParticles(int pointCount, float radius);

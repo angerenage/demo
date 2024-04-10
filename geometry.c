@@ -33,7 +33,6 @@ mat4 viewMatrix(vec3 position, vec3 focus, vec3 up) {
 	mat.m[10] = -f.z;
 	mat.m[15] = 1;
 
-	// Appliquer la translation pour la position de la caméra
 	mat.m[12] = -r.x * position.x - r.y * position.y - r.z * position.z;
 	mat.m[13] = -u.x * position.x - u.y * position.y - u.z * position.z;
 	mat.m[14] = f.x * position.x + f.y * position.y + f.z * position.z;

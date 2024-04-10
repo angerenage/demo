@@ -72,7 +72,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 				}
 				else if (key == XK_Tab) {
 					displayedScene++;
-					if (displayedScene >= 4) displayedScene = 0;
+					if (displayedScene >= 5) displayedScene = 0;
 				}
 				break;
 
@@ -230,7 +230,7 @@ int main() {
 	glViewport(0, 0, screenSize.x, screenSize.y);
 
 
-	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.1f, 1000.0f);
+	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
 
 	unsigned int num_stars = 30000;
 	StarPoint *stars = generateGalaxy(num_stars);
@@ -246,6 +246,8 @@ int main() {
 
 	int waterIndexNumber = 0;
 	GLuint water = generateGrid((vec2){2.0, 2.0}, 3, &waterIndexNumber);
+	const int particleNbr = 100;
+	GLuint particles = createParticles(particleNbr, 1.0);
 
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
@@ -254,6 +256,8 @@ int main() {
 
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
+
+	vec3 lastCamPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
 
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -357,9 +361,32 @@ int main() {
 				glBindVertexArray(water);
 				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);
 				break;
+
+			case 4:
+				// Underwater scene
+				glEnable(GL_BLEND);
+
+				glUseProgram(particleShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(particleShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glUniform3fv(glGetUniformLocation(particleShader, "camPos"), 1, (GLfloat*)&camPos);
+				glUniform1f(glGetUniformLocation(particleShader, "radius"), 1.0);
+				glUniform3f(glGetUniformLocation(particleShader, "camDir"), lastCamPos.x - camPos.x, lastCamPos.y - camPos.y, lastCamPos.z - camPos.z);
+
+				glBindVertexArray(particles);
+				glDrawArrays(GL_POINTS, 0, particleNbr);
+
+				glDisable(GL_BLEND);
+				break;
 		}
 
 		checkOpenGLError();
+
+		lastCamPos.x = camPos.x;
+		lastCamPos.y = camPos.y;
+		lastCamPos.z = camPos.z;
 
 		glXSwapBuffers(display, win);
 	}
@@ -368,7 +395,11 @@ int main() {
 	if (fbo) glDeleteFramebuffers(1, &fbo);
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
 	if (plane) glDeleteVertexArrays(1, &plane);
+	if (water) glDeleteVertexArrays(1, &water);
+	if (particles) glDeleteVertexArrays(1, &particles);
+	if (t) glDeleteVertexArrays(1, &t);
 	freeMesh(&star);
+	freeMesh(&planet);
 
 	glXMakeCurrent(display, None, NULL);
 	glXDestroyContext(display, glc);

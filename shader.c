@@ -534,6 +534,72 @@ void main() {
 }
 )glsl";
 
+// --------------------------- WATER SHADERS ---------------------------
+
+static const char particleVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+uniform mat4 projection;
+uniform mat4 view;
+
+uniform vec3 camPos;
+uniform float radius;
+
+out float pointSize;
+
+void main() {
+	vec3 relativePosition = mod(positionIn + camPos, radius) - vec3(radius / 2.0);
+	vec3 worldPosition = relativePosition + camPos;
+
+	vec3 toEdge = radius / 2.0 - abs(relativePosition);
+    float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
+
+    pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
+
+	gl_Position = projection * view * vec4(worldPosition, 1.0);
+	gl_PointSize = 40.0;
+}
+)glsl";
+
+static const char particleFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in float pointSize;
+
+uniform vec3 camDir;
+
+float pointLineDistance(vec2 point, vec2 lineStart, vec2 lineEnd) {
+	vec2 lineDir = lineEnd - lineStart;
+	float lineLength = length(lineDir);
+	vec2 normalizedDir = lineDir / lineLength;
+
+	float projection = dot(point - lineStart, normalizedDir);
+	projection = clamp(projection, 0.0, lineLength);
+
+	vec2 closestPoint = lineStart + normalizedDir * projection;
+	return length(point - closestPoint);
+}
+
+float gaussian(float x, float mu, float sigma) {
+	return exp(-0.5 * pow((x - mu) / sigma, 2.0));
+}
+
+void main() {
+	vec2 lineStart = normalize(camDir.xy) * (0.5 - pointSize);
+	vec2 lineStop = -lineStart;
+	float dist = pointLineDistance(gl_PointCoord - vec2(0.5, 0.5), lineStart, lineStop);
+	
+	if (length(camDir.xy) <= 0.001) {
+		dist = length(gl_PointCoord - vec2(0.5, 0.5));
+	}
+
+	float focusEffect = 1.0 - gaussian(dist, pointSize / 2.0, 0.1);
+	if (dist > pointSize / 2.0) discard;
+
+	fragColor = vec4(vec3(focusEffect), 1.0);//vec4(1.0, 1.0, 1.0, 1.0 - focusEffect);
+}
+)glsl";
+
 // --------------------------- DEBUG SHADERS ---------------------------
 
 static const char debugVertSrc[] = R"glsl(#version 330 core
@@ -545,6 +611,7 @@ uniform mat4 view;
 uniform float time;
 
 void main() {
+	gl_PointSize = 5.0;
 	gl_Position = projection * view * vec4(positionIn + vec3(0.0, sin(time * 6.28 + positionIn.x), 0.0), 1.0);
 }
 )glsl";
@@ -557,22 +624,30 @@ void main() {
 }
 )glsl";
 
-unsigned int galaxyShader = 0;
-unsigned int starShader = 0;
-unsigned int planetShader = 0;
 unsigned int textShader = 0;
 unsigned int snoiseShader = 0;
+
+unsigned int galaxyShader = 0;
+
+unsigned int starShader = 0;
 unsigned int bloomShader = 0;
+unsigned int planetShader = 0;
+
+unsigned int particleShader = 0;
 
 unsigned int debugShader = 0;
 
 void initShaders() {
-	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
-	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
-	planetShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, planetFragShaderSrc);
 	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
+
+	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
+
+	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
 	bloomShader = compileShader(bloomVertSrc, NULL, bloomFragSrc);
+	planetShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, planetFragShaderSrc);
+	
+	particleShader = compileShader(particleVertSrc, NULL, particleFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
