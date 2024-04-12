@@ -259,6 +259,7 @@ int main() {
 
 	vec3 lastCamPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
 
+	float lastTime = 0.0;
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		float ftime = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
@@ -373,6 +374,8 @@ int main() {
 
 				glUniform3fv(glGetUniformLocation(particleShader, "camPos"), 1, (GLfloat*)&camPos);
 				glUniform1f(glGetUniformLocation(particleShader, "radius"), 1.0);
+				glUniform1f(glGetUniformLocation(particleShader, "time"), ftime);
+				glUniform1f(glGetUniformLocation(particleShader, "deltaTime"), ftime - lastTime);
 				glUniform3f(glGetUniformLocation(particleShader, "camDir"), lastCamPos.x - camPos.x, lastCamPos.y - camPos.y, lastCamPos.z - camPos.z);
 
 				glBindVertexArray(particles);
@@ -387,6 +390,7 @@ int main() {
 		lastCamPos.x = camPos.x;
 		lastCamPos.y = camPos.y;
 		lastCamPos.z = camPos.z;
+		lastTime = ftime;
 
 		glXSwapBuffers(display, win);
 	}

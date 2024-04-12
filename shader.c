@@ -541,20 +541,26 @@ layout(location = 0) in vec3 positionIn;
 
 uniform mat4 projection;
 uniform mat4 view;
-
 uniform vec3 camPos;
+uniform vec3 camDir;
+uniform float time;
+uniform float deltaTime;
 uniform float radius;
 
+out vec2 stretchFactor;
 out float pointSize;
 
 void main() {
-	vec3 relativePosition = mod(positionIn + camPos, radius) - vec3(radius / 2.0);
+	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 20.0, 0.0) + camPos, radius) - vec3(radius / 2.0);
 	vec3 worldPosition = relativePosition + camPos;
 
 	vec3 toEdge = radius / 2.0 - abs(relativePosition);
-    float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
+	float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
 
-    pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
+	vec3 cameraDirection = normalize(vec3(-camDir.x, camDir.yz));
+	vec3 velocity = length(cameraDirection) > 0.0 ? cameraDirection : vec3(0.0, deltaTime * 10.0, 0.0);
+	stretchFactor = (projection * view * vec4(velocity, 0.0)).xy;
+	pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
 
 	gl_Position = projection * view * vec4(worldPosition, 1.0);
 	gl_PointSize = 40.0;
@@ -564,9 +570,8 @@ void main() {
 static const char particleFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
+in vec2 stretchFactor;
 in float pointSize;
-
-uniform vec3 camDir;
 
 float pointLineDistance(vec2 point, vec2 lineStart, vec2 lineEnd) {
 	vec2 lineDir = lineEnd - lineStart;
@@ -585,18 +590,14 @@ float gaussian(float x, float mu, float sigma) {
 }
 
 void main() {
-	vec2 lineStart = normalize(camDir.xy) * (0.5 - pointSize);
+	vec2 lineStart = stretchFactor * (0.5 - pointSize);
 	vec2 lineStop = -lineStart;
 	float dist = pointLineDistance(gl_PointCoord - vec2(0.5, 0.5), lineStart, lineStop);
-	
-	if (length(camDir.xy) <= 0.001) {
-		dist = length(gl_PointCoord - vec2(0.5, 0.5));
-	}
 
 	float focusEffect = 1.0 - gaussian(dist, pointSize / 2.0, 0.1);
 	if (dist > pointSize / 2.0) discard;
 
-	fragColor = vec4(vec3(focusEffect), 1.0);//vec4(1.0, 1.0, 1.0, 1.0 - focusEffect);
+	fragColor = vec4(1.0, 1.0, 1.0, focusEffect);
 }
 )glsl";
 
