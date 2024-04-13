@@ -399,7 +399,7 @@ void main() {
 	vec2 adjustedPosition = positionIn.xy / 10.0f;
 	adjustedPosition.x /= aspectRatio;
 
-	gl_Position = vec4(adjustedPosition, 0.0, 1.0) - vec4(0.90f, 0.80f, 0.0, 0.0);
+	gl_Position = vec4(adjustedPosition, -1.0, 1.0) - vec4(0.90f, 0.80f, 0.0, 0.0);
 }
 )glsl";
 
@@ -551,7 +551,7 @@ out vec2 stretchFactor;
 out float pointSize;
 
 void main() {
-	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 20.0, 0.0) + camPos, radius) - vec3(radius / 2.0);
+	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) + camPos, radius) - vec3(radius / 2.0);
 	vec3 worldPosition = relativePosition + camPos;
 
 	vec3 toEdge = radius / 2.0 - abs(relativePosition);
