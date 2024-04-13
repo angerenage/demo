@@ -1,0 +1,40 @@
+name: Executable size checker
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout code
+
+      - name: Install GCC and necessary libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libx11-dev libgl1-mesa-dev
+
+      - name: Install UPX
+        run: sudo apt-get install -y upx
+
+      - name: Compile the program
+        run: gcc -Os -s -ffunction-sections -fdata-sections -flto -Wl,--gc-sections,-flto ./**.c -lm -lX11 -lGL -ldl -I./include -o zoom
+
+      - name: Check executable size
+        run: |
+          size=$(stat -c %s zoom)
+          echo "Executable size: $size bytes"
+          if [ $size -gt 65536 ]; then
+              echo "The executable size is greater than 64KB"
+              echo "Compressing with UPX..."
+              upx --best zoom
+              size=$(stat -c %s zoom)
+              echo "New executable size: $size bytes"
+              if [ $size -gt 65536 ]; then
+                  echo "Error: The executable size is still greater than 64KB after compression."
+                  exit 1
+              fi
+          else
+          	echo "The executable size is less than or equal to 64KB"
+          fi
