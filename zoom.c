@@ -215,7 +215,7 @@ int main() {
 	GLuint noiseTexture = createTexture(1024, 1024);
 	GLuint noiseFBO = createFramebuffer(noiseTexture);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, noiseFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(snoiseShader);
@@ -397,7 +397,7 @@ int main() {
 	}
 
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
-	if (fbo) glDeleteFramebuffers(1, &fbo);
+	if (noiseFBO) glDeleteFramebuffers(1, &noiseFBO);
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
 	if (plane) glDeleteVertexArrays(1, &plane);
 	if (water) glDeleteVertexArrays(1, &water);
