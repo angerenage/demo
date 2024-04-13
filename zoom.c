@@ -210,9 +210,10 @@ int main() {
 	unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
 	GLuint plane = createIndexedVAO(planeVert, 4, planeInd, 6);
 
+	// Simplex noise texture calculation
 	glViewport(0, 0, 1024, 1024);
 	GLuint noiseTexture = createTexture(1024, 1024);
-	GLuint fbo = createFramebuffer(noiseTexture);
+	GLuint noiseFBO = createFramebuffer(noiseTexture);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
