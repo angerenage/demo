@@ -3,19 +3,26 @@
 #include <glad/glad.h>
 #include <stdio.h>
 
-extern unsigned int textShader;
-extern unsigned int snoiseShader;
+extern GLuint textShader;
+extern GLuint snoiseShader;
 
-extern unsigned int galaxyShader;
+extern GLuint galaxyShader;
 
-extern unsigned int starShader;
-extern unsigned int bloomShader;
-extern unsigned int planetShader;
+extern GLuint starShader;
+extern GLuint bloomShader;
+extern GLuint planetShader;
 
-extern unsigned int particleShader;
+extern GLuint particleShader;
+extern GLuint initialSpectrumShader;
+extern GLuint spectrumUpdateShader;
+extern GLuint waterSahder;
 
-extern unsigned int debugShader;
+extern GLuint horizontalFFTShader;
+extern GLuint verticalFFTShader;
+
+extern GLuint debugShader;
 
 void initShaders();
 
-unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode);
+GLuint compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode);
+GLuint compileComputeShader(const char *shaderCode);

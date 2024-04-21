@@ -158,7 +158,7 @@ int main() {
 	}
 
 	int contextAttribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
 		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
 		GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		None
@@ -188,10 +188,6 @@ int main() {
 
 	initShaders();
 
-	vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}};
-	unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
-	GLuint plane = createIndexedVAO(planeVert, 4, planeInd, 6);
-
 	// Simplex noise texture calculation
 	glViewport(0, 0, 1024, 1024);
 	GLuint noiseTexture = createTexture(1024, 1024);
@@ -205,9 +201,9 @@ int main() {
 	glUniform2f(glGetUniformLocation(snoiseShader, "resolution"), 512.0, 512.0);
 	glUniform1f(glGetUniformLocation(snoiseShader, "time"), 0.0);
 
-	glBindVertexArray(plane);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
-	glBindVertexArray(0);
+	renderScreenQuad();
+
+	initWater();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, screenSize.x, screenSize.y);
@@ -228,7 +224,7 @@ int main() {
 	Mesh planet = generateIcosphere(2);
 
 	int waterIndexNumber = 0;
-	GLuint water = generateGrid((vec2){2.0, 2.0}, 3, &waterIndexNumber);
+	GLuint water = generateGrid((vec2){10.0, 10.0}, 100, &waterIndexNumber);
 	const int particleNbr = 100;
 	GLuint particles = createParticles(particleNbr, 1.0);
 
@@ -308,8 +304,7 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 				glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), 5.5);
 
-				glBindVertexArray(plane);
-				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+				renderScreenQuad();
 
 				glDisable(GL_BLEND);
 				break;
@@ -335,12 +330,20 @@ int main() {
 
 			case 3:
 				// Drawing water
-				glUseProgram(debugShader);
+				updateSpectrum(ftime);
 
-				glUniformMatrix4fv(glGetUniformLocation(debugShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(debugShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glViewport(0, 0, screenSize.x, screenSize.y);
 
-				glUniform1f(glGetUniformLocation(debugShader, "time"), ftime);
+				glUseProgram(waterSahder);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, spectrum);
+				glUniform1i(glGetUniformLocation(waterSahder, "_SpectrumTextures"), 0);
+
+				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glUniform1f(glGetUniformLocation(waterSahder, "time"), ftime);
 
 				glBindVertexArray(water);
 				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);
@@ -381,12 +384,13 @@ int main() {
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
 	if (noiseFBO) glDeleteFramebuffers(1, &noiseFBO);
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
-	if (plane) glDeleteVertexArrays(1, &plane);
 	if (water) glDeleteVertexArrays(1, &water);
 	if (particles) glDeleteVertexArrays(1, &particles);
 	if (t) glDeleteVertexArrays(1, &t);
 	freeMesh(&star);
 	freeMesh(&planet);
+	cleanupWater();
+	cleanupUtils();
 
 	glXMakeCurrent(display, None, NULL);
 	glXDestroyContext(display, glc);

@@ -1,7 +1,7 @@
 #include "shader.h"
 
-unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode) {
-	unsigned int vertex, geometry, fragment;
+GLuint compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode) {
+	GLuint vertex, geometry, fragment;
 	int success;
 	char infoLog[512];
 
@@ -40,7 +40,7 @@ unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, con
 		printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
 	}
 
-	unsigned int ID = glCreateProgram();
+	GLuint ID = glCreateProgram();
 	glAttachShader(ID, vertex);
 	if (gShaderCode) glAttachShader(ID, geometry);
 	glAttachShader(ID, fragment);
@@ -59,9 +59,40 @@ unsigned int compileShader(const char *vShaderCode, const char *gShaderCode, con
 	return ID;
 }
 
+GLuint compileComputeShader(const char *shaderCode) {
+	GLuint compute;
+	int success;
+	char infoLog[512];
+
+	// vertex shader
+	compute = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(compute, 1, &shaderCode, NULL);
+	glCompileShader(compute);
+	
+	glGetShaderiv(compute, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(compute, 512, NULL, infoLog);
+		printf("ERROR::SHADER::COMPUTE::COMPILATION_FAILED\n%s\n", infoLog);
+	}
+
+	GLuint ID = glCreateProgram();
+	glAttachShader(ID, compute);
+	glLinkProgram(ID);
+	
+	glGetProgramiv(ID, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(ID, 512, NULL, infoLog);
+		printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
+	}
+
+	glDeleteShader(compute);
+
+	return ID;
+}
+
 // --------------------------- GALAXY SHADERS ---------------------------
 
-static const char galaxyVertShaderSrc[] = R"glsl(#version 330 core
+static const char galaxyVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 layout(location = 1) in float heightIn;
 
@@ -165,7 +196,7 @@ void main() {
 }
 )glsl";
 
-const char galaxyFragShaderSrc[] = R"glsl(#version 330 core
+const char galaxyFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in float density;
@@ -234,7 +265,7 @@ void main() {
 
 // --------------------------- SPHERE SHADERS ---------------------------
 
-static const char sphereVertShaderSrc[] = R"glsl(#version 330 core
+static const char sphereVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
 void main() {
@@ -242,7 +273,7 @@ void main() {
 }
 )glsl";
 
-static const char sphereGemoShaderSrc[] = R"glsl(#version 330 core
+static const char sphereGemoSrc[] = R"glsl(#version 330 core
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 128) out;
 
@@ -324,7 +355,7 @@ void main() {
 // --------------------------- STAR SHADERS ---------------------------
 
 // https://www.ronja-tutorials.com/post/010-triplanar-mapping/
-static const char starFragShaderSrc[] = R"glsl(#version 330 core
+static const char starFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in vec3 fragPosition;
@@ -357,7 +388,7 @@ void main() {
 
 // --------------------------- PLANET SHADERS ---------------------------
 
-static const char planetFragShaderSrc[] = R"glsl(#version 330 core
+static const char planetFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in vec3 fragPosition;
@@ -386,7 +417,7 @@ void main() {
 
 // --------------------------- TEXT SHADERS ---------------------------
 
-static const char textVertShaderSrc[] = R"glsl(#version 330 core
+static const char textVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
 out float id;
@@ -403,7 +434,7 @@ void main() {
 }
 )glsl";
 
-static const char textFragShaderSrc[] = R"glsl(#version 330 core
+static const char textFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 in float id;
@@ -429,8 +460,11 @@ void main() {
 static const char postVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
+out vec2 fragPos;
+
 void main() {
 	gl_Position = vec4(positionIn, 1.0);
+	fragPos = positionIn.xy;
 }
 )glsl";
 
@@ -601,6 +635,416 @@ void main() {
 }
 )glsl";
 
+static const char initialSpectrumFragSrc[] = R"glsl(#version 330 core
+layout(location = 0) out vec4 outColor0;
+layout(location = 1) out vec4 outColor1;
+layout(location = 2) out vec4 outColor2;
+layout(location = 3) out vec4 outColor3;
+
+in vec2 fragPos;
+
+#define M_PI 3.1415926535897932384626433832795
+
+struct SpectrumParameters {
+	float scale;
+	float angle;
+	float spreadBlend;
+	float swell;
+	float alpha;
+	float peakOmega;
+	float gamma;
+	float shortWavesFade;
+};
+
+uniform uint _Seed;
+uniform uint _N;
+uniform float _LengthScale0, _LengthScale1, _LengthScale2, _LengthScale3;
+uniform float _LowCutoff, _HighCutoff;
+uniform float _Gravity;
+uniform float _Depth;
+uniform SpectrumParameters _Spectrums[8];
+
+float hash(uint n) {
+	n = (n << 13U) ^ n;
+	n = n * (n * n * 15731U + 0x789221U) + 0x13763125U;
+	return float(n & uint(0x7fffffffU)) / float(0x7fffffff);
+}
+
+vec2 uniformToGaussian(float u1, float u2) {
+	float R = sqrt(-2.0 * log(u1));
+	float theta = 2.0 * M_PI * u2;
+
+	return vec2(R * cos(theta), R * sin(theta));
+}
+
+float dispersion(float kMag) {
+	return sqrt(_Gravity * kMag * tanh(min(kMag * _Depth, 20)));
+}
+
+float dispersionDerivative(float kMag) {
+	float th = tanh(min(kMag * _Depth, 20.0));
+	float ch = cosh(kMag * _Depth);
+	return _Gravity * (_Depth * kMag / (ch * ch) + th) / dispersion(kMag) / 2.0;
+}
+
+float TMACorrection(float omega) {
+	float omegaH = omega * sqrt(_Depth / _Gravity);
+	if (omegaH <= 1.0f)
+		return 0.5f * omegaH * omegaH;
+	if (omegaH < 2.0f)
+		return 1.0f - 0.5f * (2.0f - omegaH) * (2.0f - omegaH);
+
+	return 1.0f;
+}
+
+float JONSWAP(float omega, SpectrumParameters spectrum) {
+	float sigma = (omega <= spectrum.peakOmega) ? 0.07f : 0.09f;
+
+	float r = exp(-(omega - spectrum.peakOmega) * (omega - spectrum.peakOmega) / 2.0f / sigma / sigma / spectrum.peakOmega / spectrum.peakOmega);
+	
+	float oneOverOmega = 1.0f / omega;
+	float peakOmegaOverOmega = spectrum.peakOmega / omega;
+	return spectrum.scale * TMACorrection(omega) * spectrum.alpha * _Gravity * _Gravity
+		* oneOverOmega * oneOverOmega * oneOverOmega * oneOverOmega * oneOverOmega
+		* exp(-1.25f * peakOmegaOverOmega * peakOmegaOverOmega * peakOmegaOverOmega * peakOmegaOverOmega)
+		* pow(abs(spectrum.gamma), r);
+}
+
+float NormalizationFactor(float s) {
+	float s2 = s * s;
+	float s3 = s2 * s;
+	float s4 = s3 * s;
+	if (s < 5) return -0.000564f * s4 + 0.00776f * s3 - 0.044f * s2 + 0.192f * s + 0.163f;
+	else return -4.80e-08f * s4 + 1.07e-05f * s3 - 9.53e-04f * s2 + 5.90e-02f * s + 3.93e-01f;
+}
+
+float Cosine2s(float theta, float s) {
+	return NormalizationFactor(s) * pow(abs(cos(0.5f * theta)), 2.0f * s);
+}
+
+float SpreadPower(float omega, float peakOmega) {
+	if (omega > peakOmega)
+		return 9.77f * pow(abs(omega / peakOmega), -2.5f);
+	else
+		return 6.97f * pow(abs(omega / peakOmega), 5.0f);
+}
+
+float directionSpectrum(float theta, float omega, SpectrumParameters spectrum) {
+	float s = SpreadPower(omega, spectrum.peakOmega) + 16 * tanh(min(omega / spectrum.peakOmega, 20)) * spectrum.swell * spectrum.swell;
+	return mix(2.0f / 3.1415f * cos(theta) * cos(theta), Cosine2s(theta - spectrum.angle, s), spectrum.spreadBlend);
+}
+
+float shortWavesFade(float kLength, SpectrumParameters spectrum) {
+	return exp(-spectrum.shortWavesFade * spectrum.shortWavesFade * kLength * kLength);
+}
+
+void main() {
+	vec2 id = (fragPos.xy + vec2(1.0)) * _N;
+
+	uint seed = uint(id.x + _N * id.y + _N);
+	seed += _Seed;
+
+	float lengthScales[4] = float[4](_LengthScale0, _LengthScale1, _LengthScale2, _LengthScale3);
+
+	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+
+	for (uint i = 0U; i < 4U; i++) {
+		float deltaK = 2.0 * M_PI / lengthScales[i];
+		vec2 K = (id - vec2(_N)) * deltaK;
+		float kLength = length(K);
+
+		seed += i + uint(hash(seed) * 10.0);
+		
+		if (_LowCutoff <= kLength && kLength <= _HighCutoff) {
+			vec4 uniformRandSamples = vec4(hash(seed), hash(seed * 2U), hash(seed * 3U), hash(seed * 4U));
+			vec2 gauss1 = uniformToGaussian(uniformRandSamples.x, uniformRandSamples.y);
+			vec2 gauss2 = uniformToGaussian(uniformRandSamples.z, uniformRandSamples.w);
+
+			float kAngle = atan(K.y, K.x);
+			float omega = dispersion(kLength);
+
+			float dOmegadk = dispersionDerivative(kLength);
+
+			float spectrum = JONSWAP(omega, _Spectrums[i * 2U]) * directionSpectrum(kAngle, omega, _Spectrums[i * 2U]) * shortWavesFade(kLength, _Spectrums[i * 2U]);
+			spectrum += JONSWAP(omega, _Spectrums[i * 2U + 1U]) * directionSpectrum(kAngle, omega, _Spectrums[i * 2U + 1U]) * shortWavesFade(kLength, _Spectrums[i * 2U + 1U]);
+
+			color = vec4(vec2(gauss2.x, gauss1.y) * sqrt(2.0 * spectrum * abs(dOmegadk) / kLength * deltaK * deltaK), 0.0, 1.0);
+		}
+
+		if (i == 0U) outColor0 = color;
+		else if (i == 1U) outColor1 = color;
+		else if (i == 2U) outColor2 = color;
+		else if (i == 3U) outColor3 = color;
+	}
+}
+)glsl";
+
+static const char spectrumUpdateFragSrc[] = R"glsl(#version 330 core
+layout(location = 0) out vec4 outColor0;
+layout(location = 1) out vec4 outColor1;
+layout(location = 2) out vec4 outColor2;
+layout(location = 3) out vec4 outColor3;
+layout(location = 4) out vec4 outColor4;
+layout(location = 5) out vec4 outColor5;
+layout(location = 6) out vec4 outColor6;
+layout(location = 7) out vec4 outColor7;
+
+#define M_PI 3.1415926535897932384626433832795
+
+in vec2 fragPos;
+
+uniform uint _N;
+uniform float _LengthScale0, _LengthScale1, _LengthScale2, _LengthScale3;
+uniform float _RepeatTime, _FrameTime;
+uniform float _Gravity;
+
+uniform sampler2DArray initialSpectrum;
+
+void writeTo(vec4 color, int i) {
+	if (i == 0) outColor0 = color;
+	else if (i == 1) outColor1 = color;
+	else if (i == 2) outColor2 = color;
+	else if (i == 3) outColor3 = color;
+	else if (i == 4) outColor4 = color;
+	else if (i == 5) outColor5 = color;
+	else if (i == 6) outColor6 = color;
+	else if (i == 7) outColor7 = color;
+}
+
+vec2 eulerFormula(float x) {
+	return vec2(cos(x), sin(x));
+}
+
+vec2 complexMult(vec2 a, vec2 b) {
+	return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+void main() {
+	vec2 pos = (fragPos + vec2(1.0)) / 2.0;
+	vec2 id = pos * _N;
+
+	//vec2 posconj = 1.0 - pos;
+
+	//writeTo(vec4(texture(initialSpectrum, vec3(pos.y > 0.0 ? posconj : pos, 0)).rg * 500.0, 0.0, 1.0), 0);
+	//writeTo(vec4(pos, 0.0, 1.0), 0);
+
+	float lengthScales[4] = float[]( _LengthScale0, _LengthScale1, _LengthScale2, _LengthScale3 );
+
+	for (int i = 0; i < 4; ++i) {
+		vec2 h0 = texture(initialSpectrum, vec3(pos, i)).rg;
+		vec2 h0conj = texture(initialSpectrum, vec3(1.0 - pos, i)).rg * vec2(1.0, -1.0);
+
+		float halfN = _N / 2.0f;
+		vec2 K = (id - halfN) * 2.0f * M_PI / lengthScales[i];
+		float kMag = length(K);
+		float kMagRcp = 1.0 / kMag;
+
+		if (kMag < 0.0001f) {
+			kMagRcp = 1.0f;
+		}
+
+		float w_0 = 2.0f * M_PI / _RepeatTime;
+		float dispersion = floor(sqrt(_Gravity * kMag) / w_0) * w_0 * _FrameTime;
+
+		vec2 exponent = eulerFormula(dispersion);
+
+		vec2 htilde = complexMult(h0, exponent) + complexMult(h0conj, vec2(exponent.x, -exponent.y));
+		vec2 ih = vec2(-htilde.y, htilde.x);
+
+		vec2 displacementX = ih * K.x * kMagRcp;
+		vec2 displacementY = htilde;
+		vec2 displacementZ = ih * K.y * kMagRcp;
+
+		vec2 displacementX_dx = -htilde * K.x * K.x * kMagRcp;
+		vec2 displacementY_dx = ih * K.x;
+		vec2 displacementZ_dx = -htilde * K.x * K.y * kMagRcp;
+
+		vec2 displacementY_dz = ih * K.y;
+		vec2 displacementZ_dz = -htilde * K.y * K.y * kMagRcp;
+
+		vec2 htildeDisplacementX = vec2(displacementX.x - displacementZ.y, displacementX.y + displacementZ.x);
+		vec2 htildeDisplacementZ = vec2(displacementY.x - displacementZ_dx.y, displacementY.y + displacementZ_dx.x);
+
+		vec2 htildeSlopeX = vec2(displacementY_dx.x - displacementY_dz.y, displacementY_dx.y + displacementY_dz.x);
+		vec2 htildeSlopeZ = vec2(displacementX_dx.x - displacementZ_dz.y, displacementX_dx.y + displacementZ_dz.x);
+
+		writeTo(vec4(htildeDisplacementX, htildeDisplacementZ), i * 2);
+		writeTo(vec4(htildeSlopeX, htildeSlopeZ), i * 2 + 1);
+	}
+}
+)glsl";
+
+static const char waterVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+#define M_PI 3.1415926535897932384626433832795
+
+uniform mat4 view;
+uniform mat4 projection;
+uniform sampler2DArray _SpectrumTextures;
+
+out vec3 fragPos;
+
+vec4 Permute(vec4 data, vec2 id) {
+    return data * (1.0f - 2.0f * mod((id.x + id.y), 2.0));
+}
+
+const vec2 _Lambda = vec2(1.0, 1.0);
+const float _DisplacementDepthAttenuation = 1.0;
+
+void main() {
+	float _Tiles[] = float[](0.01, 3.0, 3.0, 0.13);
+
+	fragPos = (vec3((positionIn.x / 10.0) + 0.5, 0.0, (positionIn.z / 10.0) + 0.5)) + vec3(0.0, positionIn.y, 0.0);
+	vec2 id = vec2((positionIn.x / 10.0) + 0.5, (positionIn.z / 10.0) + 0.5) * 1024.0;
+
+	vec3 displacement = vec3(0.0);
+	for (int i = 3; i < 4; i++) {
+		vec4 spectrum = texture(_SpectrumTextures, vec3(fragPos.xz * _Tiles[i], i * 2));
+		vec4 htildeDisplacement = Permute(spectrum, id);
+
+		vec2 dxdz = htildeDisplacement.rg;
+		vec2 dydxz = htildeDisplacement.ba;
+
+		displacement += vec3(_Lambda.x * dxdz.x, dydxz.x, _Lambda.y * dxdz.y);
+	}
+
+	vec4 clipPos = projection * view * vec4(positionIn, 1.0);
+
+	float depth = 1.0 - (clipPos.z / clipPos.w * 0.5 + 0.5);
+	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
+
+	//fragPos += displacement;
+	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
+}
+)glsl";
+
+static const char waterFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+uniform sampler2DArray _SpectrumTextures;
+uniform float time;
+
+in vec3 fragPos;
+
+void main() {
+	fragColor = texture(_SpectrumTextures, vec3(fragPos.xz, 0)) * 50.0;
+	//fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
+}
+)glsl";
+
+// --------------------------- FFT SHADERS ---------------------------
+
+static const char horizontalFFTSrc[] = R"glsl(#version 430 core
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+#define SIZE 1024
+#define LOG_SIZE 10
+
+layout(rgba32f, binding = 0) uniform image2DArray _FourierTarget;
+
+shared vec4 fftGroupBuffer[2][SIZE];
+
+vec2 ComplexMult(vec2 a, vec2 b) {
+	return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+void ButterflyValues(uint step, uint index, out uvec2 indices, out vec2 twiddle) {
+	const float twoPi = 6.28318530718;
+	uint b = SIZE >> (step + 1);
+	uint w = b * (index / b);
+	uint i = (w + index) % SIZE;
+	twiddle.y = sin(-twoPi / SIZE * w);
+	twiddle.x = cos(-twoPi / SIZE * w);
+
+	twiddle.y = -twiddle.y;
+	indices = uvec2(i, i + b);
+}
+
+vec4 FFT(uint threadIndex, vec4 inputValue) {
+	fftGroupBuffer[0][threadIndex] = inputValue;
+	barrier();
+	bool flag = false;
+
+	for (uint step = 0; step < LOG_SIZE; ++step) {
+		uvec2 inputsIndices;
+		vec2 twiddle;
+		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
+
+		vec4 v = fftGroupBuffer[int(flag)][inputsIndices.y];
+		fftGroupBuffer[int(!flag)][threadIndex] = fftGroupBuffer[int(flag)][inputsIndices.x] + vec4(ComplexMult(twiddle, v.xy), ComplexMult(twiddle, v.zw));
+
+		flag = !flag;
+		barrier();
+	}
+
+	return fftGroupBuffer[int(flag)][threadIndex];
+}
+
+void main() {
+	for (int i = 0; i < 8; ++i) {
+		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i));
+		vec4 result = FFT(gl_GlobalInvocationID.x, data);
+		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i), result);
+	}
+}
+)glsl";
+
+static const char verticalFFTSrc[] = R"glsl(#version 430 core
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+#define SIZE 1024
+#define LOG_SIZE 10
+
+layout(rgba32f, binding = 0) uniform image2DArray _FourierTarget;
+
+shared vec4 fftGroupBuffer[2][SIZE];
+
+vec2 ComplexMult(vec2 a, vec2 b) {
+	return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+void ButterflyValues(uint step, uint index, out uvec2 indices, out vec2 twiddle) {
+	const float twoPi = 6.28318530718;
+	uint b = SIZE >> (step + 1);
+	uint w = b * (index / b);
+	uint i = (w + index) % SIZE;
+	twiddle.y = sin(-twoPi / SIZE * w);
+	twiddle.x = cos(-twoPi / SIZE * w);
+
+	twiddle.y = -twiddle.y;
+	indices = uvec2(i, i + b);
+}
+
+vec4 FFT(uint threadIndex, vec4 inputValue) {
+	fftGroupBuffer[0][threadIndex] = inputValue;
+	barrier();
+	bool flag = false;
+
+	for (uint step = 0; step < LOG_SIZE; ++step) {
+		uvec2 inputsIndices;
+		vec2 twiddle;
+		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
+
+		vec4 v = fftGroupBuffer[int(flag)][inputsIndices.y];
+		fftGroupBuffer[int(!flag)][threadIndex] = fftGroupBuffer[int(flag)][inputsIndices.x] + vec4(ComplexMult(twiddle, v.xy), ComplexMult(twiddle, v.zw));
+
+		flag = !flag;
+		barrier();
+	}
+
+	return fftGroupBuffer[int(flag)][threadIndex];
+}
+
+void main() {
+	for (int i = 0; i < 8; ++i) {
+		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i));
+		vec4 result = FFT(gl_GlobalInvocationID.x, data);
+		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i), result);
+	}
+}
+)glsl";
+
 // --------------------------- DEBUG SHADERS ---------------------------
 
 static const char debugVertSrc[] = R"glsl(#version 330 core
@@ -609,11 +1053,9 @@ layout(location = 0) in vec3 positionIn;
 uniform mat4 projection;
 uniform mat4 view;
 
-uniform float time;
-
 void main() {
 	gl_PointSize = 5.0;
-	gl_Position = projection * view * vec4(positionIn + vec3(0.0, sin(time * 6.28 + positionIn.x), 0.0), 1.0);
+	gl_Position = projection * view * vec4(positionIn, 1.0);
 }
 )glsl";
 
@@ -625,30 +1067,42 @@ void main() {
 }
 )glsl";
 
-unsigned int textShader = 0;
-unsigned int snoiseShader = 0;
+GLuint textShader = 0;
+GLuint snoiseShader = 0;
 
-unsigned int galaxyShader = 0;
+GLuint galaxyShader = 0;
 
-unsigned int starShader = 0;
-unsigned int bloomShader = 0;
-unsigned int planetShader = 0;
+GLuint starShader = 0;
+GLuint bloomShader = 0;
+GLuint planetShader = 0;
 
-unsigned int particleShader = 0;
+GLuint particleShader = 0;
+GLuint initialSpectrumShader = 0;
+GLuint spectrumUpdateShader = 0;
+GLuint waterSahder = 0;
 
-unsigned int debugShader = 0;
+GLuint horizontalFFTShader = 0;
+GLuint verticalFFTShader = 0;
+
+GLuint debugShader = 0;
 
 void initShaders() {
-	textShader = compileShader(textVertShaderSrc, NULL, textFragShaderSrc);
+	textShader = compileShader(textVertSrc, NULL, textFragSrc);
 	snoiseShader = compileShader(postVertSrc, NULL, snoise);
 
-	galaxyShader = compileShader(galaxyVertShaderSrc, NULL, galaxyFragShaderSrc);
+	galaxyShader = compileShader(galaxyVertSrc, NULL, galaxyFragSrc);
 
-	starShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, starFragShaderSrc);
+	starShader = compileShader(sphereVertSrc, sphereGemoSrc, starFragSrc);
 	bloomShader = compileShader(bloomVertSrc, NULL, bloomFragSrc);
-	planetShader = compileShader(sphereVertShaderSrc, sphereGemoShaderSrc, planetFragShaderSrc);
+	planetShader = compileShader(sphereVertSrc, sphereGemoSrc, planetFragSrc);
 	
 	particleShader = compileShader(particleVertSrc, NULL, particleFragSrc);
+	initialSpectrumShader = compileShader(postVertSrc, NULL, initialSpectrumFragSrc);
+	spectrumUpdateShader = compileShader(postVertSrc, NULL, spectrumUpdateFragSrc);
+	waterSahder = compileShader(waterVertSrc, NULL, waterFragSrc);
+
+	horizontalFFTShader = compileComputeShader(horizontalFFTSrc);
+	verticalFFTShader = compileComputeShader(verticalFFTSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
