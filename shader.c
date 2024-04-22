@@ -874,45 +874,55 @@ layout(location = 0) in vec3 positionIn;
 
 uniform mat4 view;
 uniform mat4 projection;
+uniform sampler2DArray _DisplacementTextures;
 
 out vec3 fragPos;
+out vec2 UV;
+
+const float Tile[] = float[](0.01, 3.0, 3.0, 0.13);
+const float _DisplacementDepthAttenuation = 1.0;
 
 void main() {
-	fragPos = positionIn;
-	gl_Position = projection * view * vec4(positionIn, 1.0);
+	UV = positionIn.xz / 10.0 + 0.5;
+
+	vec3 displacement = vec3(0.0);
+	for (int i = 0; i < 4; i++) {
+		displacement += texture(_DisplacementTextures, vec3(UV, 0)).xyz;
+	}
+
+	vec4 clipPos = projection * view * vec4(positionIn, 1.0);
+	float depth = 1 - (clipPos.z / clipPos.w * 0.5 + 0.5);
+
+	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
+
+	fragPos = positionIn + displacement;
+	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
 }
 )glsl";
 
 static const char waterFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
+in vec3 fragPos;
+in vec2 UV;
+
 uniform sampler2DArray _DisplacementTextures;
 
-in vec3 fragPos;
-
 void main() {
-	vec2 uv = fragPos.xz / 10.0 + 0.5;
-	vec4 test = texture(_DisplacementTextures, vec3(uv, 0)) * vec4(1, 1, 1, 0);
-	
-	fragColor = test;// * 50.0;// * 50000.0;
+	//vec4 test = texture(_DisplacementTextures, vec3(UV, 0)) * vec4(1, 1, 1, 0);
 
-	//if (length(test) > 0.0) fragColor = normalize(test);
-	//else fragColor = vec4(0.0, 0.0, 1.0, 0.0);
-
-	//fragColor = vec4(vec3(uv, 0.0), 1.0);
+	fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
 }
 )glsl";
 
 static const char assembleMapsFragSrc[] = R"glsl(#version 430 core
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+layout(rgba16f, binding = 0) uniform image2DArray _SpectrumTextures;
 layout(rgba16f, binding = 1) uniform image2DArray _DisplacementTextures;
 layout(rg16f, binding = 2) uniform image2DArray _SlopeTextures;
 
-uniform sampler2DArray _SpectrumTextures;
-
 const vec2 _Lambda = vec2(1.0, 1.0);
-const float _DisplacementDepthAttenuation = 1.0;
 
 const float _FoamDecayRate = 0.0175;
 const float _FoamBias = 0.85;
@@ -925,8 +935,8 @@ vec4 Permute(vec4 data, vec3 id) {
 
 void main() {
 	for (int i = 0; i < 4; i++) {
-		vec4 htildeDisplacement = Permute(texture(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy / 1024.0, i * 2)), gl_GlobalInvocationID);
-		vec4 htildeSlope = Permute(texture(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy / 1024.0, i * 2 + 1)), gl_GlobalInvocationID);
+		vec4 htildeDisplacement = Permute(imageLoad(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy, i * 2)), gl_GlobalInvocationID);
+		vec4 htildeSlope = Permute(imageLoad(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy, i * 2 + 1)), gl_GlobalInvocationID);
 
 		vec2 dxdz = htildeDisplacement.rg;
 		vec2 dydxz = htildeDisplacement.ba;

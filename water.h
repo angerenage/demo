@@ -8,7 +8,6 @@
 
 extern GLuint displacementTextures;
 extern GLuint slopeTextures;
-extern GLuint spectrumTextures;
 
 GLuint generateGrid(vec2 size, int subdivision, int *vertexNbr);
 GLuint createParticles(int pointCount, float radius);

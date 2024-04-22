@@ -224,7 +224,7 @@ int main() {
 	Mesh planet = generateIcosphere(2);
 
 	int waterIndexNumber = 0;
-	GLuint water = generateGrid((vec2){10.0, 10.0}, 100, &waterIndexNumber);
+	GLuint water = generateGrid((vec2){10.0, 10.0}, 1000, &waterIndexNumber);
 	const int particleNbr = 100;
 	GLuint particles = createParticles(particleNbr, 1.0);
 
@@ -330,7 +330,7 @@ int main() {
 
 			case 3:
 				// Drawing water
-				//updateSpectrum(ftime);
+				updateSpectrum(ftime);
 
 				glViewport(0, 0, screenSize.x, screenSize.y);
 
