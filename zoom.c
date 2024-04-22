@@ -330,20 +330,18 @@ int main() {
 
 			case 3:
 				// Drawing water
-				updateSpectrum(ftime);
+				//updateSpectrum(ftime);
 
 				glViewport(0, 0, screenSize.x, screenSize.y);
 
 				glUseProgram(waterSahder);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, spectrum);
-				glUniform1i(glGetUniformLocation(waterSahder, "_SpectrumTextures"), 0);
-
 				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glUniform1f(glGetUniformLocation(waterSahder, "time"), ftime);
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
+				glUniform1i(glGetUniformLocation(waterSahder, "_DisplacementTextures"), 0);
 
 				glBindVertexArray(water);
 				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);

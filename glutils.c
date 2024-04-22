@@ -47,6 +47,24 @@ GLuint createTextureArray(int width, int height, int layer) {
 	return textureID;
 }
 
+GLuint createTextureArrayRG(int width, int height, int layer) {
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureID);
+
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG16F, width, height, layer, 0, GL_RG, GL_HALF_FLOAT, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+	return textureID;
+}
+
 GLuint createFramebuffer(GLuint texture) {
 	GLuint fbo;
 	glGenFramebuffers(1, &fbo);

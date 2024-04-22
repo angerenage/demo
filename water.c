@@ -98,7 +98,9 @@ static const SpectrumParameters params[] = {
 static const int frequencySize = 1024;
 static const float gravity = 9.81f;
 
-GLuint spectrum = 0;
+GLuint displacementTextures = 0;
+GLuint slopeTextures = 0;
+/*static*/ GLuint spectrumTextures = 0;
 static GLuint spectrumFBO = 0;
 static GLuint initialSpectrumTex = 0;
 
@@ -163,21 +165,23 @@ void initWater() {
 
 	renderScreenQuad();
 
+	
+
 	// setup for actual spectrum
-	spectrum = createTextureArray(frequencySize, frequencySize, 8);
-	glBindImageTexture(0, spectrum, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
+	spectrumTextures = createTextureArray(frequencySize, frequencySize, 8);
+	glBindImageTexture(0, spectrumTextures, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
 
 	glGenFramebuffers(1, &spectrumFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, spectrumFBO);
 
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, spectrum, 0, 0);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, spectrum, 0, 1);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, spectrum, 0, 2);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, spectrum, 0, 3);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, spectrum, 0, 4);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, spectrum, 0, 5);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, spectrum, 0, 6);
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT7, spectrum, 0, 7);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, spectrumTextures, 0, 0);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, spectrumTextures, 0, 1);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, spectrumTextures, 0, 2);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, spectrumTextures, 0, 3);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, spectrumTextures, 0, 4);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, spectrumTextures, 0, 5);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, spectrumTextures, 0, 6);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT7, spectrumTextures, 0, 7);
 
 	GLenum upDrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6, GL_COLOR_ATTACHMENT7};
 	glDrawBuffers(8, upDrawBuffers);
@@ -186,6 +190,13 @@ void initWater() {
 		printf("Framebuffer is not complete!\n");
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// setup for displacement texture
+	displacementTextures = createTextureArray(frequencySize, frequencySize, 4);
+	glBindImageTexture(1, displacementTextures, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
+
+	slopeTextures = createTextureArrayRG(frequencySize, frequencySize, 4);
+	glBindImageTexture(2, slopeTextures, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RG16F);
 
 	updateSpectrum(0.0f);
 
@@ -214,15 +225,29 @@ void updateSpectrum(float time) {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// IFFT
 	glUseProgram(horizontalFFTShader);
 	glDispatchCompute(1, frequencySize, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	glUseProgram(verticalFFTShader);
 	glDispatchCompute(1, frequencySize, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+	// Map assembly
+	glUseProgram(assembleMapsShader);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, spectrumTextures);
+	glUniform1i(glGetUniformLocation(assembleMapsShader, "_SpectrumTextures"), 0);
+
+	glDispatchCompute(frequencySize / 8, frequencySize / 8, 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
 void cleanupWater() {
-	glDeleteTextures(1, &spectrum);
+	glDeleteTextures(1, &displacementTextures);
+	glDeleteTextures(1, &slopeTextures);
+	glDeleteTextures(1, &initialSpectrumTex);
+	glDeleteTextures(1, &spectrumTextures);
 	glDeleteFramebuffers(1, &spectrumFBO);
 }

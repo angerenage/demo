@@ -872,59 +872,87 @@ void main() {
 static const char waterVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
-#define M_PI 3.1415926535897932384626433832795
-
 uniform mat4 view;
 uniform mat4 projection;
-uniform sampler2DArray _SpectrumTextures;
 
 out vec3 fragPos;
 
-vec4 Permute(vec4 data, vec2 id) {
-    return data * (1.0f - 2.0f * mod((id.x + id.y), 2.0));
-}
-
-const vec2 _Lambda = vec2(1.0, 1.0);
-const float _DisplacementDepthAttenuation = 1.0;
-
 void main() {
-	float _Tiles[] = float[](0.01, 3.0, 3.0, 0.13);
-
-	fragPos = (vec3((positionIn.x / 10.0) + 0.5, 0.0, (positionIn.z / 10.0) + 0.5)) + vec3(0.0, positionIn.y, 0.0);
-	vec2 id = fragPos.xz * 1024.0;
-
-	vec3 displacement = vec3(0.0);
-	for (int i = 0; i < 4; i++) {
-		vec4 spectrum = texture(_SpectrumTextures, vec3(fragPos.xz * _Tiles[i], i * 2));
-		vec4 htildeDisplacement = Permute(spectrum, id);
-
-		vec2 dxdz = htildeDisplacement.rg;
-		vec2 dydxz = htildeDisplacement.ba;
-
-		displacement += vec3(_Lambda.x * dxdz.x, dydxz.x, _Lambda.y * dxdz.y);
-	}
-
-	vec4 clipPos = projection * view * vec4(positionIn, 1.0);
-
-	float depth = 1.0 - (clipPos.z / clipPos.w * 0.5 + 0.5);
-	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
-
-	fragPos += displacement;
-	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
+	fragPos = positionIn;
+	gl_Position = projection * view * vec4(positionIn, 1.0);
 }
 )glsl";
 
 static const char waterFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
-uniform sampler2DArray _SpectrumTextures;
-uniform float time;
+uniform sampler2DArray _DisplacementTextures;
 
 in vec3 fragPos;
 
 void main() {
-	//fragColor = texture(_SpectrumTextures, vec3(fragPos.xz, 0)) * 50.0;
-	fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
+	vec2 uv = fragPos.xz / 10.0 + 0.5;
+	vec4 test = texture(_DisplacementTextures, vec3(uv, 0)) * vec4(1, 1, 1, 0);
+	
+	fragColor = test;// * 50.0;// * 50000.0;
+
+	//if (length(test) > 0.0) fragColor = normalize(test);
+	//else fragColor = vec4(0.0, 0.0, 1.0, 0.0);
+
+	//fragColor = vec4(vec3(uv, 0.0), 1.0);
+}
+)glsl";
+
+static const char assembleMapsFragSrc[] = R"glsl(#version 430 core
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(rgba16f, binding = 1) uniform image2DArray _DisplacementTextures;
+layout(rg16f, binding = 2) uniform image2DArray _SlopeTextures;
+
+uniform sampler2DArray _SpectrumTextures;
+
+const vec2 _Lambda = vec2(1.0, 1.0);
+const float _DisplacementDepthAttenuation = 1.0;
+
+const float _FoamDecayRate = 0.0175;
+const float _FoamBias = 0.85;
+const float _FoamThreshold = 0.0;
+const float _FoamAdd = 0.1;
+
+vec4 Permute(vec4 data, vec3 id) {
+	return data * (1.0f - 2.0f * mod(id.x + id.y, 2.0));
+}
+
+void main() {
+	for (int i = 0; i < 4; i++) {
+		vec4 htildeDisplacement = Permute(texture(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy / 1024.0, i * 2)), gl_GlobalInvocationID);
+		vec4 htildeSlope = Permute(texture(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy / 1024.0, i * 2 + 1)), gl_GlobalInvocationID);
+
+		vec2 dxdz = htildeDisplacement.rg;
+		vec2 dydxz = htildeDisplacement.ba;
+		vec2 dyxdyz = htildeSlope.rg;
+		vec2 dxxdzz = htildeSlope.ba;
+		
+		float jacobian = (1.0f + _Lambda.x * dxxdzz.x) * (1.0f + _Lambda.y * dxxdzz.y) - _Lambda.x * _Lambda.y * dydxz.y * dydxz.y;
+
+		vec3 displacement = vec3(_Lambda.x * dxdz.x, dydxz.x, _Lambda.y * dxdz.y);
+
+		vec2 slopes = dyxdyz.xy / (1 + abs(dxxdzz * _Lambda));
+		float covariance = slopes.x * slopes.y;
+
+		float foam = imageLoad(_DisplacementTextures, ivec3(gl_GlobalInvocationID.xy, i)).a;
+		foam *= exp(-_FoamDecayRate);
+		foam = clamp(foam, 0.0, 1.0);
+
+		float biasedJacobian = max(0.0f, -(jacobian - _FoamBias));
+
+		if (biasedJacobian > _FoamThreshold)
+			foam += _FoamAdd * biasedJacobian;
+
+
+		imageStore(_DisplacementTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(displacement, foam));
+		imageStore(_SlopeTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(slopes, 0.0, 0.0));
+	}
 }
 )glsl";
 
@@ -977,7 +1005,7 @@ vec4 FFT(uint threadIndex, vec4 inputValue) {
 }
 
 void main() {
-	for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < 8; i++) {
 		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i));
 		vec4 result = FFT(gl_GlobalInvocationID.x, data);
 		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i), result);
@@ -1032,7 +1060,7 @@ vec4 FFT(uint threadIndex, vec4 inputValue) {
 }
 
 void main() {
-	for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < 8; i++) {
 		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i));
 		vec4 result = FFT(gl_GlobalInvocationID.x, data);
 		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i), result);
@@ -1076,6 +1104,7 @@ GLuint initialSpectrumShader = 0;
 GLuint spectrumUpdateShader = 0;
 GLuint waterSahder = 0;
 
+GLuint assembleMapsShader = 0;
 GLuint horizontalFFTShader = 0;
 GLuint verticalFFTShader = 0;
 
@@ -1096,6 +1125,7 @@ void initShaders() {
 	spectrumUpdateShader = compileShader(postVertSrc, NULL, spectrumUpdateFragSrc);
 	waterSahder = compileShader(waterVertSrc, NULL, waterFragSrc);
 
+	assembleMapsShader = compileComputeShader(assembleMapsFragSrc);
 	horizontalFFTShader = compileComputeShader(horizontalFFTSrc);
 	verticalFFTShader = compileComputeShader(verticalFFTSrc);
 

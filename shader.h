@@ -17,6 +17,7 @@ extern GLuint initialSpectrumShader;
 extern GLuint spectrumUpdateShader;
 extern GLuint waterSahder;
 
+extern GLuint assembleMapsShader;
 extern GLuint horizontalFFTShader;
 extern GLuint verticalFFTShader;
 
