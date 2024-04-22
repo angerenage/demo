@@ -823,11 +823,6 @@ void main() {
 	vec2 pos = (fragPos + vec2(1.0)) / 2.0;
 	vec2 id = pos * _N;
 
-	//vec2 posconj = 1.0 - pos;
-
-	//writeTo(vec4(texture(initialSpectrum, vec3(pos.y > 0.0 ? posconj : pos, 0)).rg * 500.0, 0.0, 1.0), 0);
-	//writeTo(vec4(pos, 0.0, 1.0), 0);
-
 	float lengthScales[4] = float[]( _LengthScale0, _LengthScale1, _LengthScale2, _LengthScale3 );
 
 	for (int i = 0; i < 4; ++i) {
@@ -896,10 +891,10 @@ void main() {
 	float _Tiles[] = float[](0.01, 3.0, 3.0, 0.13);
 
 	fragPos = (vec3((positionIn.x / 10.0) + 0.5, 0.0, (positionIn.z / 10.0) + 0.5)) + vec3(0.0, positionIn.y, 0.0);
-	vec2 id = vec2((positionIn.x / 10.0) + 0.5, (positionIn.z / 10.0) + 0.5) * 1024.0;
+	vec2 id = fragPos.xz * 1024.0;
 
 	vec3 displacement = vec3(0.0);
-	for (int i = 3; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		vec4 spectrum = texture(_SpectrumTextures, vec3(fragPos.xz * _Tiles[i], i * 2));
 		vec4 htildeDisplacement = Permute(spectrum, id);
 
@@ -914,7 +909,7 @@ void main() {
 	float depth = 1.0 - (clipPos.z / clipPos.w * 0.5 + 0.5);
 	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
 
-	//fragPos += displacement;
+	fragPos += displacement;
 	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
 }
 )glsl";
@@ -928,8 +923,8 @@ uniform float time;
 in vec3 fragPos;
 
 void main() {
-	fragColor = texture(_SpectrumTextures, vec3(fragPos.xz, 0)) * 50.0;
-	//fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
+	//fragColor = texture(_SpectrumTextures, vec3(fragPos.xz, 0)) * 50.0;
+	fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
 }
 )glsl";
 
@@ -941,7 +936,7 @@ layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 #define SIZE 1024
 #define LOG_SIZE 10
 
-layout(rgba32f, binding = 0) uniform image2DArray _FourierTarget;
+layout(rgba16f, binding = 0) uniform image2DArray _FourierTarget;
 
 shared vec4 fftGroupBuffer[2][SIZE];
 
@@ -966,7 +961,7 @@ vec4 FFT(uint threadIndex, vec4 inputValue) {
 	barrier();
 	bool flag = false;
 
-	for (uint step = 0; step < LOG_SIZE; ++step) {
+	for (uint step = 0; step < LOG_SIZE; step++) {
 		uvec2 inputsIndices;
 		vec2 twiddle;
 		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
@@ -996,7 +991,7 @@ layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 #define SIZE 1024
 #define LOG_SIZE 10
 
-layout(rgba32f, binding = 0) uniform image2DArray _FourierTarget;
+layout(rgba16f, binding = 0) uniform image2DArray _FourierTarget;
 
 shared vec4 fftGroupBuffer[2][SIZE];
 
@@ -1021,7 +1016,7 @@ vec4 FFT(uint threadIndex, vec4 inputValue) {
 	barrier();
 	bool flag = false;
 
-	for (uint step = 0; step < LOG_SIZE; ++step) {
+	for (uint step = 0; step < LOG_SIZE; step++) {
 		uvec2 inputsIndices;
 		vec2 twiddle;
 		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
