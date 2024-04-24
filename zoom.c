@@ -224,7 +224,7 @@ int main() {
 	Mesh planet = generateIcosphere(2);
 
 	int waterIndexNumber = 0;
-	GLuint water = generateGrid((vec2){10.0, 10.0}, 1000, &waterIndexNumber);
+	GLuint water = generateGrid((vec2){50.0, 50.0}, 1000, &waterIndexNumber);
 	const int particleNbr = 100;
 	GLuint particles = createParticles(particleNbr, 1.0);
 
@@ -342,6 +342,11 @@ int main() {
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
 				glUniform1i(glGetUniformLocation(waterSahder, "_DisplacementTextures"), 0);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, slopeTextures);
+				glUniform1i(glGetUniformLocation(waterSahder, "_SlopeTextures"), 1);
+
+				glUniform3fv(glGetUniformLocation(waterSahder, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
 
 				glBindVertexArray(water);
 				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);

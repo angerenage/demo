@@ -827,7 +827,7 @@ void main() {
 
 	for (int i = 0; i < 4; ++i) {
 		vec2 h0 = texture(initialSpectrum, vec3(pos, i)).rg;
-		vec2 h0conj = texture(initialSpectrum, vec3(1.0 - pos, i)).rg * vec2(1.0, -1.0);
+		vec2 h0conj = texture(initialSpectrum, vec3(mod(1.0 - pos, 1.0), i)).rg * vec2(1.0, -1.0);
 
 		float halfN = _N / 2.0f;
 		vec2 K = (id - halfN) * 2.0f * M_PI / lengthScales[i];
@@ -879,21 +879,13 @@ uniform sampler2DArray _DisplacementTextures;
 out vec3 fragPos;
 out vec2 UV;
 
-const float Tile[] = float[](0.01, 3.0, 3.0, 0.13);
-const float _DisplacementDepthAttenuation = 1.0;
-
 void main() {
-	UV = positionIn.xz / 10.0 + 0.5;
+	UV = positionIn.xz / 50.0 + 0.5;
 
 	vec3 displacement = vec3(0.0);
 	for (int i = 0; i < 4; i++) {
-		displacement += texture(_DisplacementTextures, vec3(UV, 0)).xyz;
+		displacement += texture(_DisplacementTextures, vec3(UV, i)).xyz;
 	}
-
-	vec4 clipPos = projection * view * vec4(positionIn, 1.0);
-	float depth = 1 - (clipPos.z / clipPos.w * 0.5 + 0.5);
-
-	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
 
 	fragPos = positionIn + displacement;
 	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
@@ -903,15 +895,119 @@ void main() {
 static const char waterFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
+#define M_PI 3.1415926535897932384626433832795
+
 in vec3 fragPos;
 in vec2 UV;
 
 uniform sampler2DArray _DisplacementTextures;
+uniform sampler2DArray _SlopeTextures;
+
+uniform vec3 _WorldSpaceCameraPos;
+
+
+const vec3 _SunDirection = vec3(-1.29, -1.0, 4.86);
+const float _Roughness = 0.075, _FoamRoughnessModifier = 0.0;
+const float _NormalStrength = 1.0;
+
+const vec3 _SunIrradiance = vec3(1.0, 0.694, 0.32);
+const vec3 _ScatterColor = vec3(0.016, 0.0736, 0.16), _BubbleColor = vec3(0.0, 0.02, 0.0159), _FoamColor = vec3(0.6, 0.5568, 0.492);
+const float _HeightModifier = 1.0, _BubbleDensity = 1.0;
+const float _FoamSubtracts[] = float[](0.04, -0.04, -0.46, -0.38);
+
+const float _WavePeakScatterStrength = 1.0, _ScatterStrength = 1.0, _ScatterShadowStrength = 0.5, _EnvironmentLightStrength = 0.5;
+
+
+float DotClamped(vec3 a, vec3 b) {
+	return clamp(dot(a, b), 0.0, 1.0);
+}
+
+float SchlickFresnel(vec3 normal, vec3 viewDir) {
+	return 0.02f + (1 - 0.02f) * (pow(1 - DotClamped(normal, viewDir), 5.0f));
+}
+
+float SmithMaskingBeckmann(vec3 H, vec3 S, float roughness) {
+	float hdots = max(0.001f, DotClamped(H, S));
+	float a = hdots / (roughness * sqrt(1 - hdots * hdots));
+	float a2 = a * a;
+
+	return a < 1.6f ? (1.0f - 1.259f * a + 0.396f * a2) / (3.535f * a + 2.181 * a2) : 0.0f;
+}
+
+float Beckmann(float ndoth, float roughness) {
+	float exp_arg = (ndoth * ndoth - 1) / (roughness * roughness * ndoth * ndoth);
+
+	return exp(exp_arg) / (M_PI * roughness * roughness * ndoth * ndoth * ndoth * ndoth);
+}
 
 void main() {
-	//vec4 test = texture(_DisplacementTextures, vec3(UV, 0)) * vec4(1, 1, 1, 0);
+	vec3 lightDir = -normalize(_SunDirection);
+	vec3 viewDir = normalize(_WorldSpaceCameraPos - fragPos);
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	float LdotH = DotClamped(lightDir, halfwayDir);
+	float VdotH = DotClamped(viewDir, halfwayDir);
 
-	fragColor = vec4(vec3(fragPos.y + 0.5), 1.0);
+	vec4 displacementFoam = vec4(0.0);
+	vec2 slopes = vec2(0.0);
+	for (int i = 0; i < 4; i++) {
+		slopes += texture(_SlopeTextures, vec3(UV, i)).rg;
+		displacementFoam = texture(_DisplacementTextures, vec3(UV, i));
+		displacementFoam.a = _FoamSubtracts[i];
+	}
+
+	slopes *= _NormalStrength;
+	float foam = displacementFoam.a;
+
+	mat3 normalMatrix = mat3(1.0); // No transformation
+	normalMatrix = inverse(transpose(normalMatrix));
+
+	vec3 macroNormal = vec3(0, 1, 0);
+	vec3 mesoNormal = normalize(vec3(-slopes.x, 1.0f, -slopes.y));
+	mesoNormal = normalize(normalMatrix * normalize(mesoNormal));
+
+	float NdotL = DotClamped(mesoNormal, lightDir);
+
+	float a = _Roughness + foam * _FoamRoughnessModifier;
+	float ndoth = max(0.0001f, dot(mesoNormal, halfwayDir));
+
+	float viewMask = SmithMaskingBeckmann(halfwayDir, viewDir, a);
+	float lightMask = SmithMaskingBeckmann(halfwayDir, lightDir, a);
+
+	float G = 1.0 / (1 + viewMask + lightMask);
+
+	float eta = 1.33f;
+	float R = ((eta - 1) * (eta - 1)) / ((eta + 1) * (eta + 1));
+	float thetaV = acos(viewDir.y);
+
+	float numerator = pow(1 - dot(mesoNormal, viewDir), 5 * exp(-2.69 * a));
+	float F = R + (1 - R) * numerator / (1.0f + 22.7f * pow(a, 1.5f));
+	F = clamp(F, 0.0, 1.0);
+
+	vec3 specular = _SunIrradiance * F * G * Beckmann(ndoth, a);
+	specular /= 4.0f * max(0.001f, DotClamped(macroNormal, lightDir));
+	specular *= DotClamped(mesoNormal, lightDir);
+
+	vec3 envReflection = vec3(0.56, 0.8, 1.0);//texCUBE(_EnvironmentMap, reflect(-viewDir, mesoNormal)).rgb;
+	envReflection *= _EnvironmentLightStrength;
+
+	float H = max(0.0f, displacementFoam.y) * _HeightModifier;
+	vec3 scatterColor = _ScatterColor;
+	vec3 bubbleColor = _BubbleColor;
+	float bubbleDensity = _BubbleDensity;
+
+	float k1 = _WavePeakScatterStrength * H * pow(DotClamped(lightDir, -viewDir), 4.0f) * pow(0.5f - 0.5f * dot(lightDir, mesoNormal), 3.0f);
+	float k2 = _ScatterStrength * pow(DotClamped(viewDir, mesoNormal), 2.0f);
+	float k3 = _ScatterShadowStrength * NdotL;
+	float k4 = bubbleDensity;
+
+	vec3 scatter = (k1 + k2) * scatterColor * _SunIrradiance * 1.0 / (1 + lightMask);
+	scatter += k3 * scatterColor * _SunIrradiance + k4 * bubbleColor * _SunIrradiance;
+
+	vec3 result = (1 - F) * scatter + specular + F * envReflection;
+	result = max(vec3(0.0f), result);
+	result = mix(result, _FoamColor, clamp(foam, 0.0, 1.0));
+
+	fragColor = vec4(result, 1.0f);
 }
 )glsl";
 
@@ -922,12 +1018,11 @@ layout(rgba16f, binding = 0) uniform image2DArray _SpectrumTextures;
 layout(rgba16f, binding = 1) uniform image2DArray _DisplacementTextures;
 layout(rg16f, binding = 2) uniform image2DArray _SlopeTextures;
 
-const vec2 _Lambda = vec2(1.0, 1.0);
-
-const float _FoamDecayRate = 0.0175;
-const float _FoamBias = 0.85;
-const float _FoamThreshold = 0.0;
-const float _FoamAdd = 0.1;
+uniform vec2 _Lambda;
+uniform float _FoamDecayRate;
+uniform float _FoamBias;
+uniform float _FoamThreshold;
+uniform float _FoamAdd;
 
 vec4 Permute(vec4 data, vec3 id) {
 	return data * (1.0f - 2.0f * mod(id.x + id.y, 2.0));
@@ -947,8 +1042,7 @@ void main() {
 
 		vec3 displacement = vec3(_Lambda.x * dxdz.x, dydxz.x, _Lambda.y * dxdz.y);
 
-		vec2 slopes = dyxdyz.xy / (1 + abs(dxxdzz * _Lambda));
-		float covariance = slopes.x * slopes.y;
+		vec2 slopes = dyxdyz / (1.0 + abs(dxxdzz * _Lambda));
 
 		float foam = imageLoad(_DisplacementTextures, ivec3(gl_GlobalInvocationID.xy, i)).a;
 		foam *= exp(-_FoamDecayRate);
