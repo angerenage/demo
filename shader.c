@@ -878,6 +878,9 @@ uniform sampler2DArray _DisplacementTextures;
 
 out vec3 fragPos;
 out vec2 UV;
+out float depth;
+
+const float _DisplacementDepthAttenuation = 1.0;
 
 void main() {
 	UV = positionIn.xz / 50.0 + 0.5;
@@ -888,6 +891,11 @@ void main() {
 	}
 
 	fragPos = positionIn + displacement;
+
+	vec4 clipPos = projection * view * vec4(fragPos, 1.0);
+	depth = clipPos.z / clipPos.w;
+
+	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
 	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
 }
 )glsl";
@@ -899,6 +907,7 @@ out vec4 fragColor;
 
 in vec3 fragPos;
 in vec2 UV;
+in float depth;
 
 uniform sampler2DArray _DisplacementTextures;
 uniform sampler2DArray _SlopeTextures;
@@ -906,7 +915,7 @@ uniform sampler2DArray _SlopeTextures;
 uniform vec3 _WorldSpaceCameraPos;
 
 
-const vec3 _SunDirection = vec3(-1.29, -1.0, 4.86);
+const vec3 _SunDirection = vec3(-1.29, -1.0, -4.86);
 const float _Roughness = 0.075, _FoamRoughnessModifier = 0.0;
 const float _NormalStrength = 1.0;
 
@@ -917,6 +926,8 @@ const float _FoamSubtracts[] = float[](0.04, -0.04, -0.46, -0.38);
 
 const float _WavePeakScatterStrength = 1.0, _ScatterStrength = 1.0, _ScatterShadowStrength = 0.5, _EnvironmentLightStrength = 0.5;
 
+
+const float _FoamDepthAttenuation = 1.0;
 
 float DotClamped(vec3 a, vec3 b) {
 	return clamp(dot(a, b), 0.0, 1.0);
@@ -951,12 +962,12 @@ void main() {
 	vec2 slopes = vec2(0.0);
 	for (int i = 0; i < 4; i++) {
 		slopes += texture(_SlopeTextures, vec3(UV, i)).rg;
-		displacementFoam = texture(_DisplacementTextures, vec3(UV, i));
-		displacementFoam.a = _FoamSubtracts[i];
+		displacementFoam += texture(_DisplacementTextures, vec3(UV, i));
+		displacementFoam.a += _FoamSubtracts[i];
 	}
 
 	slopes *= _NormalStrength;
-	float foam = displacementFoam.a;
+	float foam = mix(0.0, clamp(displacementFoam.a, 0.0, 1.0), pow(depth, _FoamDepthAttenuation));
 
 	mat3 normalMatrix = mat3(1.0); // No transformation
 	normalMatrix = inverse(transpose(normalMatrix));
@@ -1005,7 +1016,7 @@ void main() {
 
 	vec3 result = (1 - F) * scatter + specular + F * envReflection;
 	result = max(vec3(0.0f), result);
-	result = mix(result, _FoamColor, clamp(foam, 0.0, 1.0));
+	//result = mix(result, _FoamColor, clamp(foam, 0.0, 1.0));
 
 	fragColor = vec4(result, 1.0f);
 }

@@ -48,13 +48,15 @@ void handleEvents(Display *display, Atom wmDelete) {
 				break;
 
 			case KeyPress:
-				KeySym key = XLookupKeysym(&event.xkey, 0);
-				if (key == XK_Escape) {
-					running = false;
-				}
-				else if (key == XK_Tab) {
-					displayedScene++;
-					if (displayedScene >= 5) displayedScene = 0;
+				{
+					KeySym key = XLookupKeysym(&event.xkey, 0);
+					if (key == XK_Escape) {
+						running = false;
+					}
+					else if (key == XK_Tab) {
+						displayedScene++;
+						if (displayedScene >= 5) displayedScene = 0;
+					}
 				}
 				break;
 
