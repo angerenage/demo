@@ -1,9 +1,21 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+#include <GL/gl.h>
+
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "geometry.h"
+
+extern Display *display;
+extern Window window;
+extern Atom wmDelete;
+
+void initWindow(vec2 size);
+void cleanupWindow();
 
 void renderScreenQuad();
 

@@ -1,8 +1,4 @@
-#include <glad/glad.h>
-#include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -90,93 +86,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 }
 
 int main() {
-	Display *display = XOpenDisplay(NULL);
-	if (display == NULL) {
-		fprintf(stderr, "Cannot open display\n");
-		return 1;
-	}
-
-	int screen = DefaultScreen(display);
-	Window root = RootWindow(display, screen);
-
-	int fbAttribs[] = {
-		GLX_X_RENDERABLE, True,
-		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-		GLX_RENDER_TYPE, GLX_RGBA_BIT,
-		GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
-		GLX_RED_SIZE, 8,
-		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8,
-		GLX_ALPHA_SIZE, 8,
-		GLX_DEPTH_SIZE, 24,
-		GLX_STENCIL_SIZE, 8,
-		GLX_DOUBLEBUFFER, True,
-		GLX_SAMPLE_BUFFERS, 1,
-		GLX_SAMPLES, 4,
-		None
-	};
-
-	int fbcount;
-	GLXFBConfig *fbConfigs = glXChooseFBConfig(display, screen, fbAttribs, &fbcount);
-	if (!fbConfigs || fbcount == 0) {
-		fprintf(stderr, "Failed to retrieve framebuffer config\n");
-		return 1;
-	}
-
-	GLXFBConfig fbConfig = fbConfigs[0]; // Choisissez le premier de la liste
-	XFree(fbConfigs); // Libérer la liste des configurations
-
-	XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbConfig);
-	if (vi == NULL) {
-		fprintf(stderr, "No appropriate visual found\n");
-		return 1;
-	}
-
-	XSetWindowAttributes swa;
-	swa.colormap = XCreateColormap(display, root, vi->visual, AllocNone);
-	swa.border_pixel = 0;
-	swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
-
-	Window win = XCreateWindow(
-		display, root,
-		0, 0, 800, 600, 0,
-		vi->depth, InputOutput,
-		vi->visual,
-		CWBorderPixel | CWColormap | CWEventMask, &swa
-	);
-
-	// Handle close button
-	Atom wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
-	XSetWMProtocols(display, win, &wmDelete, 1);
-
-	XMapWindow(display, win);
-	XStoreName(display, win, "Zoom Demo");
-
-	typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
-	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc) glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
-	if (glXCreateContextAttribsARB == NULL) {
-		fprintf(stderr, "glXCreateContextAttribsARB not found. Exiting.\n");
-		exit(1);
-	}
-
-	int contextAttribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
-		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
-		GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-		None
-	};
-
-	GLXContext glc = glXCreateContextAttribsARB(display, fbConfig, NULL, True, contextAttribs);
-	if (!glc) {
-		fprintf(stderr, "Failed to create GL context\n");
-		return 1;
-	}
-	glXMakeCurrent(display, win, glc);
-
-	if (!gladLoadGLLoader((GLADloadproc)glXGetProcAddress)) {
-		fprintf(stderr, "Failed to initialize GLAD\n");
-		return -1;
-	}
+	initWindow(screenSize);
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
@@ -205,7 +115,11 @@ int main() {
 
 	renderScreenQuad();
 
+	glDeleteFramebuffers(1, &noiseFBO);
+
+
 	initWater();
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, screenSize.x, screenSize.y);
@@ -383,11 +297,10 @@ int main() {
 		lastCamPos.z = camPos.z;
 		lastTime = ftime;
 
-		glXSwapBuffers(display, win);
+		glXSwapBuffers(display, window);
 	}
 
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
-	if (noiseFBO) glDeleteFramebuffers(1, &noiseFBO);
 	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
 	if (water) glDeleteVertexArrays(1, &water);
 	if (particles) glDeleteVertexArrays(1, &particles);
@@ -397,12 +310,7 @@ int main() {
 	cleanupWater();
 	cleanupUtils();
 
-	glXMakeCurrent(display, None, NULL);
-	glXDestroyContext(display, glc);
-	XDestroyWindow(display, win);
-	XFreeColormap(display, swa.colormap);
-	XFree(vi);
-	XCloseDisplay(display);
+	cleanupWindow();
 
 	return 0;
 }

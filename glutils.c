@@ -1,10 +1,117 @@
 #include "glutils.h"
 
+Display *display;
+Window window;
+Atom wmDelete;
+
+static XSetWindowAttributes swa;
+static GLXContext glc;
+static XVisualInfo *vi;
+
+void initWindow(vec2 size) {
+	display = XOpenDisplay(NULL);
+	if (display == NULL) {
+		fprintf(stderr, "Cannot open display\n");
+		exit(EXIT_FAILURE);
+	}
+
+	int screen = DefaultScreen(display);
+	Window root = RootWindow(display, screen);
+
+	int fbAttribs[] = {
+		GLX_X_RENDERABLE, True,
+		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
+		GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+		GLX_RED_SIZE, 8,
+		GLX_GREEN_SIZE, 8,
+		GLX_BLUE_SIZE, 8,
+		GLX_ALPHA_SIZE, 8,
+		GLX_DEPTH_SIZE, 24,
+		GLX_STENCIL_SIZE, 8,
+		GLX_DOUBLEBUFFER, True,
+		GLX_SAMPLE_BUFFERS, 1,
+		GLX_SAMPLES, 4,
+		None
+	};
+
+	int fbcount;
+	GLXFBConfig *fbConfigs = glXChooseFBConfig(display, screen, fbAttribs, &fbcount);
+	if (!fbConfigs || fbcount == 0) {
+		fprintf(stderr, "Failed to retrieve framebuffer config\n");
+		exit(EXIT_FAILURE);
+	}
+
+	GLXFBConfig fbConfig = fbConfigs[0];
+	XFree(fbConfigs);
+
+	vi = glXGetVisualFromFBConfig(display, fbConfig);
+	if (vi == NULL) {
+		fprintf(stderr, "No appropriate visual found\n");
+		exit(EXIT_FAILURE);
+	}
+
+	swa.colormap = XCreateColormap(display, root, vi->visual, AllocNone);
+	swa.border_pixel = 0;
+	swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+
+	window = XCreateWindow(
+		display, root,
+		0, 0, size.y, size.x, 0,
+		vi->depth, InputOutput,
+		vi->visual,
+		CWBorderPixel | CWColormap | CWEventMask, &swa
+	);
+
+	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
+	XSetWMProtocols(display, window, &wmDelete, 1);
+
+	XMapWindow(display, window);
+	XStoreName(display, window, "Zoom Demo");
+
+	typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc) glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
+	if (glXCreateContextAttribsARB == NULL) {
+		fprintf(stderr, "glXCreateContextAttribsARB not found. Exiting.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	int contextAttribs[] = {
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+		GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		None
+	};
+
+	glc = glXCreateContextAttribsARB(display, fbConfig, NULL, True, contextAttribs);
+	if (!glc) {
+		fprintf(stderr, "Failed to create GL context\n");
+		exit(EXIT_FAILURE);
+	}
+	glXMakeCurrent(display, window, glc);
+
+	if (!gladLoadGLLoader((GLADloadproc)glXGetProcAddress)) {
+		fprintf(stderr, "Failed to initialize GLAD\n");
+		cleanupWindow();
+		exit(EXIT_FAILURE);
+	}
+}
+
+void cleanupWindow() {
+	glXMakeCurrent(display, None, NULL);
+	glXDestroyContext(display, glc);
+	XDestroyWindow(display, window);
+	XFreeColormap(display, swa.colormap);
+	XFree(vi);
+	XCloseDisplay(display);
+}
+
 static const vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}};
 static const unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
 GLuint plane = 0;
 
-void renderScreenQuad() {
+void renderScreenQuad()
+{
 	if (!plane) plane = createIndexedVAO(planeVert, 4, planeInd, 6);
 
 	glBindVertexArray(plane);
