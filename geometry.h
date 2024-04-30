@@ -24,6 +24,9 @@ typedef struct {
 mat4 projectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane);
 mat4 viewMatrix(vec3 position, vec3 focus, vec3 up);
 
+vec3 vec3_add(vec3 a, vec3 b);
+vec3 vec3_scale(vec3 v, float s);
+vec3 vec3_lerp(vec3 a, vec3 v, float t);
 vec3 substracteVector(vec3 v1, vec3 v2);
 vec3 normalize(vec3 v);
 vec3 crossProduct(vec3 v1, vec3 v2);

@@ -585,15 +585,15 @@ out vec2 stretchFactor;
 out float pointSize;
 
 void main() {
-	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) + camPos, radius) - vec3(radius / 2.0);
+	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) - camPos, radius) - vec3(radius / 2.0);
 	vec3 worldPosition = relativePosition + camPos;
 
 	vec3 toEdge = radius / 2.0 - abs(relativePosition);
 	float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
 
-	vec3 cameraDirection = normalize(vec3(-camDir.x, camDir.yz));
+	vec3 cameraDirection = normalize(projection * view * vec4(camDir, 0.0)).xyz;
 	vec3 velocity = length(cameraDirection) > 0.0 ? cameraDirection : vec3(0.0, deltaTime * 10.0, 0.0);
-	stretchFactor = (projection * view * vec4(velocity, 0.0)).xy;
+	stretchFactor = (vec4(velocity, 0.0)).xy;
 	pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
 
 	gl_Position = projection * view * vec4(worldPosition, 1.0);

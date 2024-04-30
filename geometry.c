@@ -40,6 +40,18 @@ mat4 viewMatrix(vec3 position, vec3 focus, vec3 up) {
 	return mat;
 }
 
+vec3 vec3_add(vec3 a, vec3 b) {
+	return (vec3){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+vec3 vec3_scale(vec3 v, float s) {
+	return (vec3){v.x * s, v.y * s, v.z * s};
+}
+
+vec3 vec3_lerp(vec3 a, vec3 b, float t) {
+	return vec3_add(vec3_scale(a, 1 - t), vec3_scale(b, t));
+}
+
 vec3 substracteVector(vec3 v1, vec3 v2) {
 	vec3 result;
 	result.x = v1.x - v2.x;

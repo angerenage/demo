@@ -9,6 +9,7 @@
 #include "galaxy.h"
 #include "sphere.h"
 #include "water.h"
+#include "jellyfish.h"
 #include "text.h"
 
 vec2 screenSize = {600.0, 800.0};
@@ -144,6 +145,9 @@ int main() {
 	const int particleNbr = 100;
 	GLuint particles = createParticles(particleNbr, 1.0);
 
+	int jellyfishIndexNumber = 0;
+	GLuint jellyfish = generateDome(&jellyfishIndexNumber);
+
 	int indiceCount = 0;
 	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
 	
@@ -270,6 +274,17 @@ int main() {
 
 			case 4:
 				// Underwater scene
+
+				// Drawing jellyfish
+				glUseProgram(debugShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(debugShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(debugShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glBindVertexArray(jellyfish);
+				glDrawElements(GL_TRIANGLES, jellyfishIndexNumber, GL_UNSIGNED_INT, NULL);
+
+				// Drawing particles
 				glEnable(GL_BLEND);
 
 				glUseProgram(particleShader);
