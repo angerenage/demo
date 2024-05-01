@@ -1,13 +1,13 @@
 #include "water.h"
 
-GLuint generateGrid(vec2 size, int subdivision, int *indexNbr) {
+Mesh generateGrid(vec2 size, int subdivision) {
 	const int width = subdivision + 1;
 	const int vertexNbr = (subdivision + 2) * (subdivision + 2);
-	*indexNbr = width * width * 6;
+	const int indexNbr = width * width * 6;
 
 	GLuint vao = 0;
 	vec3 *positions = (vec3*)malloc(sizeof(vec3) * vertexNbr);
-	int *indices = (int*)malloc(sizeof(int) * (*indexNbr));
+	int *indices = (int*)malloc(sizeof(int) * indexNbr);
 
 	if (positions && indices) {
 		int index = 0;
@@ -38,16 +38,15 @@ GLuint generateGrid(vec2 size, int subdivision, int *indexNbr) {
 			}
 		}
 
-		vao = createIndexedVAO(positions, vertexNbr, indices, *indexNbr);
-
+		vao = createIndexedVAO(positions, vertexNbr, indices, indexNbr);
 		free(positions);
 		free(indices);
 	}
 
-	return vao;
+	return (Mesh){vao, vertexNbr, indexNbr};
 }
 
-GLuint createParticles(int pointCount, float radius) {
+Mesh createParticles(int pointCount, float radius) {
 	vec3 *points = (vec3*)malloc(pointCount * sizeof(vec3));
 	GLuint vao = 0;
 
@@ -69,7 +68,7 @@ GLuint createParticles(int pointCount, float radius) {
 		free(points);
 	}
 
-	return vao;
+	return (Mesh){vao, pointCount, 0};
 }
 
 typedef struct spectrumParameters_s {

@@ -497,7 +497,7 @@ Glyph getGlyphForCharacter(wchar_t c) {
 	};
 }
 
-GLuint createText(wchar_t *text, int *indiceCount) {
+Mesh createText(wchar_t *text) {
 	int charId = 0;
 	unsigned int totalSquareCount = 0;
 
@@ -534,13 +534,11 @@ GLuint createText(wchar_t *text, int *indiceCount) {
 		charId++;
 	}
 
-	*indiceCount = indexCount;
 	GLuint vao = createIndexedVAO(points, pointCount, indices, indexCount);
-
 	free(points);
 	free(indices);
 
-	return vao;
+	return (Mesh){vao, pointCount, indexCount};
 }
 
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {

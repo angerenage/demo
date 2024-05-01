@@ -118,45 +118,31 @@ int main() {
 
 	glDeleteFramebuffers(1, &noiseFBO);
 
-
 	initWater();
-
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, screenSize.x, screenSize.y);
 
 
-	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
-
-	unsigned int num_stars = 30000;
-	StarPoint *stars = generateGalaxy(num_stars);
-	GLuint galaxyVAO = 0;
-	if (stars) {
-		galaxyVAO = createGalaxyVAO(stars, num_stars);
-		free(stars);
-	}
-	else running = false;
+	Mesh galaxy = generateGalaxy(30000);
 
 	Mesh star = generateIcosphere(2);
 	Mesh planet = generateIcosphere(2);
 
-	int waterIndexNumber = 0;
-	GLuint water = generateGrid((vec2){50.0, 50.0}, 1000, &waterIndexNumber);
-	const int particleNbr = 100;
-	GLuint particles = createParticles(particleNbr, 1.0);
+	Mesh water = generateGrid((vec2){50.0, 50.0}, 1000);
+	Mesh particles = createParticles(100, 1.0);
+	Mesh jellyfish = generateDome((vec2){3.0, 1.5}, 0.0);
 
-	int jellyfishIndexNumber = 0;
-	GLuint jellyfish = generateDome(&jellyfishIndexNumber);
+	Mesh t = createText(L"Appuyez sur tab pour changer de scène");
 
-	int indiceCount = 0;
-	GLuint t = createText(L"Appuyez sur tab pour changer de scène", &indiceCount);
 	
-	float camDistance = 10.0f;
+	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
 
+	float camDistance = 10.0f;
+	vec3 lastCamPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
+	
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
-
-	vec3 lastCamPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
 
 	float lastTime = 0.0;
 	while (running) {
@@ -175,8 +161,8 @@ int main() {
 		glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
 		glUniform1f(glGetUniformLocation(textShader, "time"), ftime);
 
-		glBindVertexArray(t);
-		glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, NULL);
+		glBindVertexArray(t.VAO);
+		glDrawElements(GL_TRIANGLES, t.indexCount, GL_UNSIGNED_INT, NULL);
 		
 		switch (displayedScene) {
 			case 0: // Drawing galaxy
@@ -191,8 +177,8 @@ int main() {
 				glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
 
 				glDepthMask(0x00);
-				glBindVertexArray(galaxyVAO);
-				glDrawArrays(GL_POINTS, 0, num_stars);
+				glBindVertexArray(galaxy.VAO);
+				glDrawArrays(GL_POINTS, 0, galaxy.vertexCount);
 				glDepthMask(0xFF);
 
 				glDisable(GL_BLEND);
@@ -268,8 +254,8 @@ int main() {
 
 				glUniform3fv(glGetUniformLocation(waterSahder, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
 
-				glBindVertexArray(water);
-				glDrawElements(GL_TRIANGLES, waterIndexNumber, GL_UNSIGNED_INT, NULL);
+				glBindVertexArray(water.VAO);
+				glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
 				break;
 
 			case 4:
@@ -281,8 +267,8 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(debugShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(debugShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glBindVertexArray(jellyfish);
-				glDrawElements(GL_TRIANGLES, jellyfishIndexNumber, GL_UNSIGNED_INT, NULL);
+				glBindVertexArray(jellyfish.VAO);
+				glDrawElements(GL_TRIANGLES, jellyfish.indexCount, GL_UNSIGNED_INT, NULL);
 
 				// Drawing particles
 				glEnable(GL_BLEND);
@@ -298,8 +284,8 @@ int main() {
 				glUniform1f(glGetUniformLocation(particleShader, "deltaTime"), ftime - lastTime);
 				glUniform3f(glGetUniformLocation(particleShader, "camDir"), lastCamPos.x - camPos.x, lastCamPos.y - camPos.y, lastCamPos.z - camPos.z);
 
-				glBindVertexArray(particles);
-				glDrawArrays(GL_POINTS, 0, particleNbr);
+				glBindVertexArray(particles.VAO);
+				glDrawArrays(GL_POINTS, 0, particles.vertexCount);
 
 				glDisable(GL_BLEND);
 				break;
@@ -316,12 +302,13 @@ int main() {
 	}
 
 	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
-	if (galaxyVAO) glDeleteVertexArrays(1, &galaxyVAO);
-	if (water) glDeleteVertexArrays(1, &water);
-	if (particles) glDeleteVertexArrays(1, &particles);
-	if (t) glDeleteVertexArrays(1, &t);
-	freeMesh(&star);
-	freeMesh(&planet);
+	freeMesh(galaxy);
+	freeMesh(star);
+	freeMesh(planet);
+	freeMesh(water);
+	freeMesh(particles);
+	freeMesh(jellyfish);
+	freeMesh(t);
 	cleanupWater();
 	cleanupUtils();
 

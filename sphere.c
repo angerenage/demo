@@ -79,13 +79,8 @@ Mesh generateIcosphere(int subdivisions) {
 	}
 
 	GLuint vao = createIndexedVAO(vertices, vertexCount, indices, indexCount);
+	free(vertices);
+	free(indices);
 
-	Mesh mesh = {vao, vertices, vertexCount, indices, indexCount};
-	return mesh;
-}
-
-void freeMesh(Mesh* mesh) {
-	if (mesh->VAO) glDeleteVertexArrays(1, &mesh->VAO);
-	if (mesh->vertices) free((vec3*)mesh->vertices);
-	if (mesh->indices) free((int*)mesh->indices);
+	return (Mesh){vao, vertexCount, indexCount};
 }

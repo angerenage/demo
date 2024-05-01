@@ -10,14 +10,4 @@
 
 #include "glutils.h"
 
-typedef struct mesh_s {
-	GLuint VAO;
-	const vec3* vertices;
-	int vertexCount;
-	const int* indices;
-	int indexCount;
-} Mesh;
-
 Mesh generateIcosphere(int subdivisions);
-
-void freeMesh(Mesh* mesh);

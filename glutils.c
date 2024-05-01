@@ -246,3 +246,7 @@ void checkOpenGLError() {
 void cleanupUtils() {
 	glDeleteVertexArrays(1, &plane);
 }
+
+void freeMesh(Mesh m) {
+	glDeleteVertexArrays(1, &m.VAO);
+}

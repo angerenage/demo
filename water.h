@@ -9,8 +9,8 @@
 extern GLuint displacementTextures;
 extern GLuint slopeTextures;
 
-GLuint generateGrid(vec2 size, int subdivision, int *vertexNbr);
-GLuint createParticles(int pointCount, float radius);
+Mesh generateGrid(vec2 size, int subdivision);
+Mesh createParticles(int pointCount, float radius);
 
 void initWater();
 void updateSpectrum(float time);

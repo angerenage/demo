@@ -1,6 +1,6 @@
 #include "galaxy.h"
 
-StarPoint *generateGalaxy(unsigned int num_stars) {
+Mesh generateGalaxy(unsigned int num_stars) {
 	srand(8);
 
 	StarPoint *stars = (StarPoint*)malloc(sizeof(StarPoint) * num_stars);
@@ -27,7 +27,11 @@ StarPoint *generateGalaxy(unsigned int num_stars) {
 
 		stars[num_stars - 1] = (StarPoint){(vec3){0.0, 0.0, 0.0}, NAN}; // Adding quasar
 	}
-	return stars;
+
+	GLuint vao = createGalaxyVAO(stars, num_stars);
+	free(stars);
+
+	return (Mesh){vao, num_stars, 0};
 }
 
 GLuint createGalaxyVAO(const StarPoint *stars, unsigned int num_stars) {

@@ -22,8 +22,8 @@ void halfBezier(vec3 P0, vec3 P1, vec3 P2, vec3 P3, int resolution, vec3* points
 	}
 }
 
-GLuint generateDome(int *indexNumber) {
-	halfBezier((vec3){a, 0, 0}, (vec3){a, 2 * b, 0}, (vec3){-a, 2 * b, 0}, (vec3){-a, 0, 0}, NUM_SLICES - 1, bezierPoints);
+Mesh generateDome(vec2 size, float inset) {
+	halfBezier((vec3){size.x, 0, 0}, (vec3){size.x - inset, 2 * size.y, 0}, (vec3){-size.x + inset, 2 * size.y, 0}, (vec3){-size.x, 0, 0}, NUM_SLICES - 1, bezierPoints);
 
 	const int vertexNumber = (NUM_POINTS * (NUM_SLICES - 1));
 
@@ -70,6 +70,7 @@ GLuint generateDome(int *indexNumber) {
 		}
 	}
 
-	*indexNumber = vertexNumber * 6;
-	return createIndexedVAO(domeVertices, vertexNumber + 1, indices, vertexNumber * 6);
+	GLuint vao = createIndexedVAO(domeVertices, vertexNumber + 1, indices, vertexNumber * 6);
+	
+	return (Mesh){vao, vertexNumber + 1, vertexNumber * 6};
 }

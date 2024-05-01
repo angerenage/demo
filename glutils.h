@@ -10,6 +10,12 @@
 
 #include "geometry.h"
 
+typedef struct mesh_s {
+	GLuint VAO;
+	int vertexCount;
+	int indexCount;
+} Mesh;
+
 extern Display *display;
 extern Window window;
 extern Atom wmDelete;
@@ -29,3 +35,4 @@ GLuint createVAO(const vec3 *vertices, int vertexCount);
 
 void checkOpenGLError();
 void cleanupUtils();
+void freeMesh(Mesh m);
