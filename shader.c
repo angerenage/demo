@@ -1022,64 +1022,6 @@ void main() {
 }
 )glsl";
 
-static const char underwaterPostFragSrc[] = R"glsl(#version 330 core
-out vec4 fragColor;
-
-in vec2 fragPos;
-
-uniform mat4 view;
-uniform mat4 projection;
-uniform vec3 cameraPos;
-
-uniform sampler2DMS underwaterDepthTexture;
-uniform sampler2DMS underwaterColorTexture;
-
-mat4 invViewProj = mat4(1.0);
-
-vec3 reconstructWorldPos(float depth, vec2 TexCoords) {
-    vec4 clipSpaceLocation = vec4(TexCoords * 2.0 - 1.0, depth, 1.0);
-    vec4 worldSpaceLocation = invViewProj * clipSpaceLocation;
-    return worldSpaceLocation.xyz / worldSpaceLocation.w;
-}
-
-void main() {
-	invViewProj = inverse(view * projection);
-
-	float depth = 0.0;
-	for (int i = 0; i < 4; i++) {
-		depth += texelFetch(underwaterDepthTexture, ivec2(gl_FragCoord.xy), i).x;
-	}
-	depth /= 4.0;
-
-	vec3 color = vec3(0.0);
-	for (int i = 0; i < 4; i++) {
-		color += texelFetch(underwaterColorTexture, ivec2(gl_FragCoord.xy), i).xyz;
-	}
-	color /= 4.0;
-
-	float fogDensity = 0.9;
-	float fogFactor = exp(-depth * fogDensity);
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
-	vec3 fogColor = vec3(0.0, 0.1, 0.2);
-
-
-	vec3 worldPos = reconstructWorldPos(depth, fragPos / 2 + 0.5);
-
-    vec3 viewDirection = normalize(worldPos - cameraPos);
-    vec3 upDirection = vec3(0.0, 1.0, 0.0);
-    float angle = dot(viewDirection, upDirection);
-    float surfaceVisibility = smoothstep(-0.5, 1.0, angle);
-	vec3 surfaceColor = vec3(0.66, 0.78, 0.98);
-	
-	if (color == vec3(0.0)) {
-		color = mix(color, surfaceColor, surfaceVisibility);
-	}
-	color = mix(fogColor, color, fogFactor);
-
-	fragColor = vec4(color, 1.0);
-}
-)glsl";
-
 static const char assembleMapsCompSrc[] = R"glsl(#version 430 core
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -1241,6 +1183,137 @@ void main() {
 }
 )glsl";
 
+// --------------------------- ATMOSPHERE SHADERS ---------------------------
+
+static const char atmospherePostFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec2 fragPos;
+
+uniform mat4 view;
+uniform mat4 projection;
+uniform vec3 cameraPos;
+
+uniform sampler2DMS renderDepthTexture;
+uniform sampler2DMS renderColorTexture;
+
+mat4 invViewProj = mat4(1.0);
+
+vec3 reconstructWorldPos(float depth, vec2 TexCoords) {
+	vec4 clipSpaceLocation = vec4(TexCoords * 2.0 - 1.0, depth, 1.0);
+	vec4 worldSpaceLocation = invViewProj * clipSpaceLocation;
+	return worldSpaceLocation.xyz / worldSpaceLocation.w;
+}
+
+const vec3 _SunDirection = vec3(-1.29, -1.0, -4.86);
+const vec3 _SunColor = vec3(3.0117648, 1.945098, 0.8784314);
+const float _FogHeight = 218.0;
+const float _FogAttenuation = 1.63;
+const float _FogDensity = 0.01;
+const float _FogOffset = 583.0;
+const vec3 _FogColor = vec3(0.83, 0.85, 0.87);
+
+const vec3 skyColor = vec3(0.56, 0.8, 1.0);
+const float waterHeight = 150.0;
+const float farPlane = 1000.0f;
+
+void main() {
+	invViewProj = inverse(projection * view);
+
+	float depth = 0.0;
+	for (int i = 0; i < 4; i++) {
+		depth += texelFetch(renderDepthTexture, ivec2(gl_FragCoord.xy), i).x;
+	}
+	depth /= 4.0;
+
+	vec3 col = vec3(0.0);
+	for (int i = 0; i < 4; i++) {
+		col += texelFetch(renderColorTexture, ivec2(gl_FragCoord.xy), i).xyz;
+	}
+	col /= 4.0;
+
+	if (depth >= 1) col = skyColor;
+
+	vec3 worldPos = reconstructWorldPos(depth, fragPos / 2 + 0.5);
+	vec3 viewDir = normalize(cameraPos - worldPos);
+
+	float height = min(_FogHeight, worldPos.y + waterHeight) / _FogHeight;
+	height = pow(clamp(0.0, 1.0, height), 1.0f / _FogAttenuation);
+
+	float viewDistance = depth * farPlane;
+	
+	float fogFactor = (_FogDensity / sqrt(log(2))) * max(0.0f, viewDistance - _FogOffset);
+	fogFactor = exp2(-fogFactor * fogFactor);
+
+	vec3 sunDir = normalize(_SunDirection);
+	vec3 sun = _SunColor * pow(clamp(0.0, 1.0, dot(viewDir, sunDir)), 3500.0f);
+
+	vec3 color = mix(_FogColor, col, clamp(0.0, 1.0, height + fogFactor));
+	
+	fragColor = vec4(color + max(vec3(0.0), sun), 1.0);
+}
+)glsl";
+
+// --------------------------- UNDERWATER SHADERS ---------------------------
+
+static const char underwaterPostFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec2 fragPos;
+
+uniform mat4 view;
+uniform mat4 projection;
+uniform vec3 cameraPos;
+
+uniform sampler2DMS underwaterDepthTexture;
+uniform sampler2DMS underwaterColorTexture;
+
+mat4 invViewProj = mat4(1.0);
+
+vec3 reconstructWorldPos(float depth, vec2 TexCoords) {
+	vec4 clipSpaceLocation = vec4(TexCoords * 2.0 - 1.0, depth, 1.0);
+	vec4 worldSpaceLocation = invViewProj * clipSpaceLocation;
+	return worldSpaceLocation.xyz / worldSpaceLocation.w;
+}
+
+void main() {
+	invViewProj = inverse(projection * view);
+
+	float depth = 0.0;
+	for (int i = 0; i < 4; i++) {
+		depth += texelFetch(underwaterDepthTexture, ivec2(gl_FragCoord.xy), i).x;
+	}
+	depth /= 4.0;
+
+	vec3 color = vec3(0.0);
+	for (int i = 0; i < 4; i++) {
+		color += texelFetch(underwaterColorTexture, ivec2(gl_FragCoord.xy), i).xyz;
+	}
+	color /= 4.0;
+
+	float fogDensity = 0.9;
+	float fogFactor = exp(-depth * fogDensity);
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+	vec3 fogColor = vec3(0.0, 0.1, 0.2);
+
+
+	vec3 worldPos = reconstructWorldPos(depth, fragPos / 2 + 0.5);
+
+	vec3 viewDirection = normalize(worldPos - cameraPos);
+	vec3 upDirection = vec3(0.0, 1.0, 0.0);
+	float angle = dot(viewDirection, upDirection);
+	float surfaceVisibility = smoothstep(-0.5, 1.0, angle);
+	vec3 surfaceColor = vec3(0.66, 0.78, 0.98);
+	
+	if (depth >= 1) {
+		color = mix(color, surfaceColor, surfaceVisibility);
+	}
+	color = mix(fogColor, color, fogFactor);
+
+	fragColor = vec4(color, 1.0);
+}
+)glsl";
+
 // --------------------------- DEBUG SHADERS ---------------------------
 
 static const char debugVertSrc[] = R"glsl(#version 330 core
@@ -1277,6 +1350,7 @@ GLuint underwaterPostProcessShader = 0;
 GLuint initialSpectrumShader = 0;
 GLuint spectrumUpdateShader = 0;
 GLuint waterSahder = 0;
+GLuint atmospherePostProcessShader = 0;
 
 GLuint assembleMapsShader = 0;
 GLuint horizontalFFTShader = 0;
@@ -1299,6 +1373,7 @@ void initShaders() {
 	initialSpectrumShader = compileShader(postVertSrc, NULL, initialSpectrumFragSrc);
 	spectrumUpdateShader = compileShader(postVertSrc, NULL, spectrumUpdateFragSrc);
 	waterSahder = compileShader(waterVertSrc, NULL, waterFragSrc);
+	atmospherePostProcessShader = compileShader(postVertSrc, NULL, atmospherePostFragSrc);
 
 	assembleMapsShader = compileComputeShader(assembleMapsCompSrc);
 	horizontalFFTShader = compileComputeShader(horizontalFFTSrc);

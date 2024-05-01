@@ -222,6 +222,9 @@ int main() {
 				// Drawing water
 				updateSpectrum(ftime);
 
+				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 				glViewport(0, 0, screenSize.x, screenSize.y);
 
 				glUseProgram(waterSahder);
@@ -240,11 +243,28 @@ int main() {
 
 				glBindVertexArray(water.VAO);
 				glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
+
+				// Water scene post-processing
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glUseProgram(atmospherePostProcessShader);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
+				glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderDepthTexture"), 0);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
+				glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderColorTexture"), 1);
+
+				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniform3fv(glGetUniformLocation(atmospherePostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
+
+				renderScreenQuad();
 				break;
 
 			case 4:
 				// Underwater scene
-				glBindFramebuffer(GL_FRAMEBUFFER, underwaterFBO);
+				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				// Drawing jellyfish
@@ -275,21 +295,20 @@ int main() {
 
 				glDisable(GL_BLEND);
 
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 				// Underwater scene post-processing
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glUseProgram(underwaterPostProcessShader);
 
 				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterDepthTexture);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
 				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterDepthTexture"), 0);
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterColorTexture);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
 				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterColorTexture"), 1);
 
-				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(particleShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform3fv(glGetUniformLocation(particleShader, "cameraPos"), 1, (GLfloat*)&camPos);
+				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
 
 				renderScreenQuad();
 				break;

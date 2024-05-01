@@ -8,9 +8,9 @@
 
 extern GLuint displacementTextures;
 extern GLuint slopeTextures;
-extern GLuint underwaterDepthTexture;
-extern GLuint underwaterColorTexture;
-extern GLuint underwaterFBO;
+extern GLuint renderDepthTexture;
+extern GLuint renderColorTexture;
+extern GLuint postProcessFBO;
 
 Mesh generateGrid(vec2 size, int subdivision);
 Mesh createParticles(int pointCount, float radius);

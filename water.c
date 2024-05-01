@@ -26,9 +26,9 @@ static const SpectrumParameters params[] = {
 static const int frequencySize = 1024;
 static const float gravity = 9.81f;
 
-GLuint underwaterDepthTexture = 0;
-GLuint underwaterColorTexture = 0;
-GLuint underwaterFBO = 0;
+GLuint renderDepthTexture;
+GLuint renderColorTexture;
+GLuint postProcessFBO;
 
 GLuint displacementTextures = 0;
 GLuint slopeTextures = 0;
@@ -250,21 +250,21 @@ void updateSpectrum(float time) {
 }
 
 void updateUnderwaterTextures(vec2 screenSize) {
-	if (underwaterDepthTexture || underwaterColorTexture || underwaterFBO) {
-		glDeleteTextures(1, &underwaterDepthTexture);
-		glDeleteTextures(1, &underwaterColorTexture);
-		glDeleteFramebuffers(1, &underwaterFBO);
+	if (renderDepthTexture || renderColorTexture || postProcessFBO) {
+		glDeleteTextures(1, &renderDepthTexture);
+		glDeleteTextures(1, &renderColorTexture);
+		glDeleteFramebuffers(1, &postProcessFBO);
 	}
 	
-	glGenTextures(1, &underwaterDepthTexture);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterDepthTexture);
+	glGenTextures(1, &renderDepthTexture);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_DEPTH_COMPONENT, screenSize.x, screenSize.y, GL_TRUE);
 
-	glGenTextures(1, &underwaterColorTexture);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterColorTexture);
+	glGenTextures(1, &renderColorTexture);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, screenSize.x, screenSize.y, GL_TRUE);
 
-	underwaterFBO = createFramebufferMultisampleDepth(underwaterDepthTexture, underwaterColorTexture);
+	postProcessFBO = createFramebufferMultisampleDepth(renderDepthTexture, renderColorTexture);
 }
 
 void cleanupWater() {
@@ -274,7 +274,7 @@ void cleanupWater() {
 	glDeleteTextures(1, &spectrumTextures);
 	glDeleteFramebuffers(1, &spectrumFBO);
 
-	glDeleteTextures(1, &underwaterDepthTexture);
-	glDeleteTextures(1, &underwaterColorTexture);
-	glDeleteFramebuffers(1, &underwaterFBO);
+	glDeleteTextures(1, &renderDepthTexture);
+	glDeleteTextures(1, &renderColorTexture);
+	glDeleteFramebuffers(1, &postProcessFBO);
 }
