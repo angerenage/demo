@@ -40,6 +40,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 
 					screenSize = (vec2){(float)xce.width, (float)xce.height};
 
+					updateUnderwaterTextures(screenSize);
 					projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
 				}
 				break;
@@ -101,7 +102,7 @@ int main() {
 
 	initShaders();
 	initNoise();
-	initWater();
+	initWater(screenSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, screenSize.x, screenSize.y);
@@ -243,6 +244,8 @@ int main() {
 
 			case 4:
 				// Underwater scene
+				glBindFramebuffer(GL_FRAMEBUFFER, underwaterFBO);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				// Drawing jellyfish
 				glUseProgram(debugShader);
@@ -271,6 +274,24 @@ int main() {
 				glDrawArrays(GL_POINTS, 0, particles.vertexCount);
 
 				glDisable(GL_BLEND);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+				// Underwater scene post-processing
+				glUseProgram(underwaterPostProcessShader);
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterDepthTexture);
+				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterDepthTexture"), 0);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterColorTexture);
+				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterColorTexture"), 1);
+
+				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(particleShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniform3fv(glGetUniformLocation(particleShader, "cameraPos"), 1, (GLfloat*)&camPos);
+
+				renderScreenQuad();
 				break;
 		}
 

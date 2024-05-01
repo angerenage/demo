@@ -469,7 +469,7 @@ void main() {
 )glsl";
 
 // Algorithm by patriciogonzalezvivo (https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83)
-static const char snoise[] = R"glsl(#version 330 core
+static const char snoiseFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 uniform float time;
@@ -629,7 +629,7 @@ void main() {
 	float dist = pointLineDistance(gl_PointCoord - vec2(0.5, 0.5), lineStart, lineStop);
 
 	float focusEffect = 1.0 - gaussian(dist, pointSize / 2.0, 0.1);
-	if (dist > pointSize / 2.0) discard;
+	if (focusEffect <= pointSize / 2.0 || dist > pointSize / 2.0) discard;
 
 	fragColor = vec4(1.0, 1.0, 1.0, focusEffect);
 }
@@ -1022,7 +1022,65 @@ void main() {
 }
 )glsl";
 
-static const char assembleMapsFragSrc[] = R"glsl(#version 430 core
+static const char underwaterPostFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec2 fragPos;
+
+uniform mat4 view;
+uniform mat4 projection;
+uniform vec3 cameraPos;
+
+uniform sampler2DMS underwaterDepthTexture;
+uniform sampler2DMS underwaterColorTexture;
+
+mat4 invViewProj = mat4(1.0);
+
+vec3 reconstructWorldPos(float depth, vec2 TexCoords) {
+    vec4 clipSpaceLocation = vec4(TexCoords * 2.0 - 1.0, depth, 1.0);
+    vec4 worldSpaceLocation = invViewProj * clipSpaceLocation;
+    return worldSpaceLocation.xyz / worldSpaceLocation.w;
+}
+
+void main() {
+	invViewProj = inverse(view * projection);
+
+	float depth = 0.0;
+	for (int i = 0; i < 4; i++) {
+		depth += texelFetch(underwaterDepthTexture, ivec2(gl_FragCoord.xy), i).x;
+	}
+	depth /= 4.0;
+
+	vec3 color = vec3(0.0);
+	for (int i = 0; i < 4; i++) {
+		color += texelFetch(underwaterColorTexture, ivec2(gl_FragCoord.xy), i).xyz;
+	}
+	color /= 4.0;
+
+	float fogDensity = 0.9;
+	float fogFactor = exp(-depth * fogDensity);
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+	vec3 fogColor = vec3(0.0, 0.1, 0.2);
+
+
+	vec3 worldPos = reconstructWorldPos(depth, fragPos / 2 + 0.5);
+
+    vec3 viewDirection = normalize(worldPos - cameraPos);
+    vec3 upDirection = vec3(0.0, 1.0, 0.0);
+    float angle = dot(viewDirection, upDirection);
+    float surfaceVisibility = smoothstep(-0.5, 1.0, angle);
+	vec3 surfaceColor = vec3(0.66, 0.78, 0.98);
+	
+	if (color == vec3(0.0)) {
+		color = mix(color, surfaceColor, surfaceVisibility);
+	}
+	color = mix(fogColor, color, fogFactor);
+
+	fragColor = vec4(color, 1.0);
+}
+)glsl";
+
+static const char assembleMapsCompSrc[] = R"glsl(#version 430 core
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(rgba16f, binding = 0) uniform image2DArray _SpectrumTextures;
@@ -1215,6 +1273,7 @@ GLuint bloomShader = 0;
 GLuint planetShader = 0;
 
 GLuint particleShader = 0;
+GLuint underwaterPostProcessShader = 0;
 GLuint initialSpectrumShader = 0;
 GLuint spectrumUpdateShader = 0;
 GLuint waterSahder = 0;
@@ -1227,7 +1286,7 @@ GLuint debugShader = 0;
 
 void initShaders() {
 	textShader = compileShader(textVertSrc, NULL, textFragSrc);
-	snoiseShader = compileShader(postVertSrc, NULL, snoise);
+	snoiseShader = compileShader(postVertSrc, NULL, snoiseFragSrc);
 
 	galaxyShader = compileShader(galaxyVertSrc, NULL, galaxyFragSrc);
 
@@ -1236,11 +1295,12 @@ void initShaders() {
 	planetShader = compileShader(sphereVertSrc, sphereGemoSrc, planetFragSrc);
 	
 	particleShader = compileShader(particleVertSrc, NULL, particleFragSrc);
+	underwaterPostProcessShader = compileShader(postVertSrc, NULL, underwaterPostFragSrc);
 	initialSpectrumShader = compileShader(postVertSrc, NULL, initialSpectrumFragSrc);
 	spectrumUpdateShader = compileShader(postVertSrc, NULL, spectrumUpdateFragSrc);
 	waterSahder = compileShader(waterVertSrc, NULL, waterFragSrc);
 
-	assembleMapsShader = compileComputeShader(assembleMapsFragSrc);
+	assembleMapsShader = compileComputeShader(assembleMapsCompSrc);
 	horizontalFFTShader = compileComputeShader(horizontalFFTSrc);
 	verticalFFTShader = compileComputeShader(verticalFFTSrc);
 

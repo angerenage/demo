@@ -123,6 +123,7 @@ void initNoise() {
 
 	renderScreenQuad();
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDeleteFramebuffers(1, &noiseFBO);
 }
 
@@ -130,8 +131,7 @@ static const vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0,
 static const unsigned int planeInd[] = {2, 1, 0, 2, 3, 1};
 GLuint plane = 0;
 
-void renderScreenQuad()
-{
+void renderScreenQuad() {
 	if (!plane) plane = createIndexedVAO(planeVert, 4, planeInd, 6);
 
 	glBindVertexArray(plane);
@@ -139,8 +139,7 @@ void renderScreenQuad()
 	glBindVertexArray(0);
 }
 
-GLuint createTexture(int width, int height)
-{
+GLuint createTexture(int width, int height) {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
@@ -197,6 +196,20 @@ GLuint createFramebuffer(GLuint texture) {
 	glGenFramebuffers(1, &fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer is not complete!\n");
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	return fbo;
+}
+
+GLuint createFramebufferMultisampleDepth(GLuint depth, GLuint color) {
+	GLuint fbo;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, color, 0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		printf("Framebuffer is not complete!\n");

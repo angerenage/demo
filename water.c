@@ -1,5 +1,41 @@
 #include "water.h"
 
+typedef struct spectrumParameters_s {
+	float scale;
+	float windDirection;
+	float spreadBlend;
+	float swell;
+	float windSpeed;
+	float fetch;
+	float peakEnhancement;
+	float shortWavesFade;
+} SpectrumParameters;
+
+static const SpectrumParameters params[] = {
+	//scale, windDirection, spreadBlend, swell, windSpeed, fetch,       peakEnhancement, shortWavesFade
+	{0.1,    22.0,          0.642,       1.0,   2.0,       100000.0,    1.0,             0.025},
+	{0.07,   59.0,          0.0,         1.0,   2.0,       1000.0,      1.0,             0.01},
+	{0.25,   97.0,          0.14,        1.0,   20.0,      100000000.0, 1.0,             0.5},
+	{0.25,   67.0,          0.47,        1.0,   20.0,      1000000.0,   1.0,             0.5},
+	{0.15,   105.0,         0.2,         1.0,   5.0,       1000000.0,   1.0,             0.5},
+	{0.1,    19.0,          0.298,       1.0,   1.0,       10000.0,     1.0,             0.5},
+	{1.0,    209.0,         0.56,        0.695, 1.0,       200000.0,    1.0,             0.0001},
+	{0.23,   0.0,           0.0,         1.0,   1.0,       1000.0,      1.0,             0.0001},
+};
+
+static const int frequencySize = 1024;
+static const float gravity = 9.81f;
+
+GLuint underwaterDepthTexture = 0;
+GLuint underwaterColorTexture = 0;
+GLuint underwaterFBO = 0;
+
+GLuint displacementTextures = 0;
+GLuint slopeTextures = 0;
+static GLuint spectrumTextures = 0;
+static GLuint spectrumFBO = 0;
+static GLuint initialSpectrumTex = 0;
+
 Mesh generateGrid(vec2 size, int subdivision) {
 	const int width = subdivision + 1;
 	const int vertexNbr = (subdivision + 2) * (subdivision + 2);
@@ -71,39 +107,9 @@ Mesh createParticles(int pointCount, float radius) {
 	return (Mesh){vao, pointCount, 0};
 }
 
-typedef struct spectrumParameters_s {
-	float scale;
-	float windDirection;
-	float spreadBlend;
-	float swell;
-	float windSpeed;
-	float fetch;
-	float peakEnhancement;
-	float shortWavesFade;
-} SpectrumParameters;
+void initWater(vec2 screenSize) {
+	updateUnderwaterTextures(screenSize);
 
-static const SpectrumParameters params[] = {
-	//scale, windDirection, spreadBlend, swell, windSpeed, fetch,       peakEnhancement, shortWavesFade
-	{0.1,    22.0,          0.642,       1.0,   2.0,       100000.0,    1.0,             0.025},
-	{0.07,   59.0,          0.0,         1.0,   2.0,       1000.0,      1.0,             0.01},
-	{0.25,   97.0,          0.14,        1.0,   20.0,      100000000.0, 1.0,             0.5},
-	{0.25,   67.0,          0.47,        1.0,   20.0,      1000000.0,   1.0,             0.5},
-	{0.15,   105.0,         0.2,         1.0,   5.0,       1000000.0,   1.0,             0.5},
-	{0.1,    19.0,          0.298,       1.0,   1.0,       10000.0,     1.0,             0.5},
-	{1.0,    209.0,         0.56,        0.695, 1.0,       200000.0,    1.0,             0.0001},
-	{0.23,   0.0,           0.0,         1.0,   1.0,       1000.0,      1.0,             0.0001},
-};
-
-static const int frequencySize = 1024;
-static const float gravity = 9.81f;
-
-GLuint displacementTextures = 0;
-GLuint slopeTextures = 0;
-/*static*/ GLuint spectrumTextures = 0;
-static GLuint spectrumFBO = 0;
-static GLuint initialSpectrumTex = 0;
-
-void initWater() {
 	//computing initial spectrum
 	initialSpectrumTex = createTextureArray(frequencySize, frequencySize, 4);
 
@@ -163,8 +169,6 @@ void initWater() {
 	}
 
 	renderScreenQuad();
-
-	
 
 	// setup for actual spectrum
 	spectrumTextures = createTextureArray(frequencySize, frequencySize, 8);
@@ -245,10 +249,32 @@ void updateSpectrum(float time) {
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
+void updateUnderwaterTextures(vec2 screenSize) {
+	if (underwaterDepthTexture || underwaterColorTexture || underwaterFBO) {
+		glDeleteTextures(1, &underwaterDepthTexture);
+		glDeleteTextures(1, &underwaterColorTexture);
+		glDeleteFramebuffers(1, &underwaterFBO);
+	}
+	
+	glGenTextures(1, &underwaterDepthTexture);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterDepthTexture);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_DEPTH_COMPONENT, screenSize.x, screenSize.y, GL_TRUE);
+
+	glGenTextures(1, &underwaterColorTexture);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, underwaterColorTexture);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, screenSize.x, screenSize.y, GL_TRUE);
+
+	underwaterFBO = createFramebufferMultisampleDepth(underwaterDepthTexture, underwaterColorTexture);
+}
+
 void cleanupWater() {
 	glDeleteTextures(1, &displacementTextures);
 	glDeleteTextures(1, &slopeTextures);
 	glDeleteTextures(1, &initialSpectrumTex);
 	glDeleteTextures(1, &spectrumTextures);
 	glDeleteFramebuffers(1, &spectrumFBO);
+
+	glDeleteTextures(1, &underwaterDepthTexture);
+	glDeleteTextures(1, &underwaterColorTexture);
+	glDeleteFramebuffers(1, &underwaterFBO);
 }

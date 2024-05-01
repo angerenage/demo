@@ -13,6 +13,7 @@ extern GLuint bloomShader;
 extern GLuint planetShader;
 
 extern GLuint particleShader;
+extern GLuint underwaterPostProcessShader;
 extern GLuint initialSpectrumShader;
 extern GLuint spectrumUpdateShader;
 extern GLuint waterSahder;
