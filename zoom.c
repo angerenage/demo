@@ -100,24 +100,7 @@ int main() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	initShaders();
-
-	// Simplex noise texture calculation
-	glViewport(0, 0, 1024, 1024);
-	GLuint noiseTexture = createTexture(1024, 1024);
-	GLuint noiseFBO = createFramebuffer(noiseTexture);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, noiseFBO);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glUseProgram(snoiseShader);
-
-	glUniform2f(glGetUniformLocation(snoiseShader, "resolution"), 512.0, 512.0);
-	glUniform1f(glGetUniformLocation(snoiseShader, "time"), 0.0);
-
-	renderScreenQuad();
-
-	glDeleteFramebuffers(1, &noiseFBO);
-
+	initNoise();
 	initWater();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -301,7 +284,6 @@ int main() {
 		glXSwapBuffers(display, window);
 	}
 
-	if (noiseTexture) glDeleteTextures(1, &noiseTexture);
 	freeMesh(galaxy);
 	freeMesh(star);
 	freeMesh(planet);

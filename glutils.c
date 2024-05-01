@@ -8,6 +8,8 @@ static XSetWindowAttributes swa;
 static GLXContext glc;
 static XVisualInfo *vi;
 
+GLuint noiseTexture;
+
 void initWindow(vec2 size) {
 	display = XOpenDisplay(NULL);
 	if (display == NULL) {
@@ -104,6 +106,24 @@ void cleanupWindow() {
 	XFreeColormap(display, swa.colormap);
 	XFree(vi);
 	XCloseDisplay(display);
+}
+
+void initNoise() {
+	glViewport(0, 0, 1024, 1024);
+	noiseTexture = createTexture(1024, 1024);
+	GLuint noiseFBO = createFramebuffer(noiseTexture);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, noiseFBO);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(snoiseShader);
+
+	glUniform2f(glGetUniformLocation(snoiseShader, "resolution"), 512.0, 512.0);
+	glUniform1f(glGetUniformLocation(snoiseShader, "time"), 0.0);
+
+	renderScreenQuad();
+
+	glDeleteFramebuffers(1, &noiseFBO);
 }
 
 static const vec3 planeVert[] = {{-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}};
@@ -245,6 +265,7 @@ void checkOpenGLError() {
 
 void cleanupUtils() {
 	glDeleteVertexArrays(1, &plane);
+	glDeleteTextures(1, &noiseTexture);
 }
 
 void freeMesh(Mesh m) {

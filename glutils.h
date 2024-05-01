@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "geometry.h"
+#include "shader.h"
 
 typedef struct mesh_s {
 	GLuint VAO;
@@ -20,8 +21,12 @@ extern Display *display;
 extern Window window;
 extern Atom wmDelete;
 
+extern GLuint noiseTexture;
+
 void initWindow(vec2 size);
 void cleanupWindow();
+
+void initNoise();
 
 void renderScreenQuad();
 
