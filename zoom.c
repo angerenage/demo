@@ -276,6 +276,7 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
 				glUniform1f(glGetUniformLocation(jellyfishShader, "time"), ftime);
+				glUniform3fv(glGetUniformLocation(jellyfishShader, "cameraPos"), 1, (GLfloat*)&camPos);
 
 				glBindVertexArray(jellyfish.VAO);
 				glDrawElements(GL_TRIANGLES, jellyfish.indexCount, GL_UNSIGNED_INT, NULL);

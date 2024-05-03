@@ -1316,6 +1316,7 @@ void main() {
 
 // --------------------------- JELLYFISH SHADERS ---------------------------
 
+//https://math.stackexchange.com/questions/2341764/asymmetric-periods-in-a-sine-curve
 static const char jellyfishVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
@@ -1342,13 +1343,14 @@ void main() {
 }
 )glsl";
 
-//https://math.stackexchange.com/questions/2341764/asymmetric-periods-in-a-sine-curve
 static const char jellyfishFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
 
 #define M_PI 3.1415926535897932384626433832795
 
 in vec3 fragPos;
+
+uniform vec3 cameraPos;
 
 float circle(vec2 UV, vec2 pos) {
 	return max(0.0, mix(1.0, 0.0, abs(length(UV + pos) * 2 - 1) * 2));
@@ -1367,7 +1369,10 @@ void main() {
 
 	float heightMask = max(0.0, (1 - fragPos.y * 2.0) - baseAlpha);
 
-	fragColor = vec4(vec3(0.8), baseAlpha + heightMask + ringMask * radiusMask);//vec4(vec3(radiusMask), 1.0);
+	vec3 viewDirection = normalize(fragPos - cameraPos);
+	float fresnel = clamp(0.0, 1.0, dot(viewDirection, normalize(fragPos)) * 2 + 0.5) / 4;
+
+	fragColor = vec4(vec3(0.8), baseAlpha + heightMask + fresnel + ringMask * radiusMask);
 }
 )glsl";
 
