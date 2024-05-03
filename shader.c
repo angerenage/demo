@@ -922,7 +922,6 @@ const float _NormalStrength = 1.0;
 const vec3 _SunIrradiance = vec3(1.0, 0.694, 0.32);
 const vec3 _ScatterColor = vec3(0.016, 0.0736, 0.16), _BubbleColor = vec3(0.0, 0.02, 0.0159), _FoamColor = vec3(0.6, 0.5568, 0.492);
 const float _HeightModifier = 1.0, _BubbleDensity = 1.0;
-const float _FoamSubtracts[] = float[](0.04, -0.04, -0.46, -0.38);
 
 const float _WavePeakScatterStrength = 1.0, _ScatterStrength = 1.0, _ScatterShadowStrength = 0.5, _EnvironmentLightStrength = 0.5;
 
@@ -963,7 +962,6 @@ void main() {
 	for (int i = 0; i < 4; i++) {
 		slopes += texture(_SlopeTextures, vec3(UV, i)).rg;
 		displacementFoam += texture(_DisplacementTextures, vec3(UV, i));
-		displacementFoam.a += _FoamSubtracts[i];
 	}
 
 	slopes *= _NormalStrength;
@@ -1016,7 +1014,7 @@ void main() {
 
 	vec3 result = (1 - F) * scatter + specular + F * envReflection;
 	result = max(vec3(0.0f), result);
-	//result = mix(result, _FoamColor, clamp(foam, 0.0, 1.0));
+	result = mix(result, _FoamColor, clamp(foam, 0.0, 1.0));
 
 	fragColor = vec4(result, 1.0f);
 }
@@ -1065,7 +1063,7 @@ void main() {
 			foam += _FoamAdd * biasedJacobian;
 
 
-		imageStore(_DisplacementTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(displacement, foam));
+		imageStore(_DisplacementTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(displacement, foam / 5));
 		imageStore(_SlopeTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(slopes, 0.0, 0.0));
 	}
 }
@@ -1417,7 +1415,7 @@ GLuint particleShader = 0;
 GLuint underwaterPostProcessShader = 0;
 GLuint initialSpectrumShader = 0;
 GLuint spectrumUpdateShader = 0;
-GLuint waterSahder = 0;
+GLuint waterShader = 0;
 GLuint atmospherePostProcessShader = 0;
 
 GLuint assembleMapsShader = 0;
@@ -1441,7 +1439,7 @@ void initShaders() {
 	underwaterPostProcessShader = compileShader(postVertSrc, NULL, underwaterPostFragSrc);
 	initialSpectrumShader = compileShader(postVertSrc, NULL, initialSpectrumFragSrc);
 	spectrumUpdateShader = compileShader(postVertSrc, NULL, spectrumUpdateFragSrc);
-	waterSahder = compileShader(waterVertSrc, NULL, waterFragSrc);
+	waterShader = compileShader(waterVertSrc, NULL, waterFragSrc);
 	atmospherePostProcessShader = compileShader(postVertSrc, NULL, atmospherePostFragSrc);
 
 	assembleMapsShader = compileComputeShader(assembleMapsCompSrc);

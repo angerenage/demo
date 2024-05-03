@@ -227,19 +227,19 @@ int main() {
 
 				glViewport(0, 0, screenSize.x, screenSize.y);
 
-				glUseProgram(waterSahder);
+				glUseProgram(waterShader);
 
-				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(waterSahder, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUniformMatrix4fv(glGetUniformLocation(waterShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(waterShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
-				glUniform1i(glGetUniformLocation(waterSahder, "_DisplacementTextures"), 0);
+				glUniform1i(glGetUniformLocation(waterShader, "_DisplacementTextures"), 0);
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, slopeTextures);
-				glUniform1i(glGetUniformLocation(waterSahder, "_SlopeTextures"), 1);
+				glUniform1i(glGetUniformLocation(waterShader, "_SlopeTextures"), 1);
 
-				glUniform3fv(glGetUniformLocation(waterSahder, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
+				glUniform3fv(glGetUniformLocation(waterShader, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
 
 				glBindVertexArray(water.VAO);
 				glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);

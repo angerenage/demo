@@ -17,7 +17,7 @@ extern GLuint particleShader;
 extern GLuint underwaterPostProcessShader;
 extern GLuint initialSpectrumShader;
 extern GLuint spectrumUpdateShader;
-extern GLuint waterSahder;
+extern GLuint waterShader;
 extern GLuint atmospherePostProcessShader;
 
 extern GLuint assembleMapsShader;
