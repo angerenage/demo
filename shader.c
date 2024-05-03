@@ -1314,15 +1314,75 @@ void main() {
 }
 )glsl";
 
+// --------------------------- JELLYFISH SHADERS ---------------------------
+
+static const char jellyfishVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+out vec3 fragPos;
+
+uniform mat4 projection;
+uniform mat4 view;
+
+uniform float time;
+
+void main() {
+	const float minRadius = 0.7;
+	const float radiusAmpl = 0.4;
+
+	float height = positionIn.y;
+
+	float x = time + height;
+	float size = (sin(x - 0.5 * sin(x)) + 1.0) / 2.0;
+	vec3 pos = positionIn * (minRadius + radiusAmpl * size) * min(minRadius, exp(1.0 - (height / 1.5)));
+	pos.y = height;
+
+	fragPos = positionIn;
+	gl_Position = projection * view * vec4(pos, 1.0);
+}
+)glsl";
+
+//https://math.stackexchange.com/questions/2341764/asymmetric-periods-in-a-sine-curve
+static const char jellyfishFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+#define M_PI 3.1415926535897932384626433832795
+
+in vec3 fragPos;
+
+float circle(vec2 UV, vec2 pos) {
+	return max(0.0, mix(1.0, 0.0, abs(length(UV + pos) * 2 - 1) * 2));
+}
+
+void main() {
+	float baseAlpha = 0.5;
+
+	float radiusMask = max(0.0, length(fragPos.xz / 2) - 0.35);
+
+	const float shift = 0.75;
+	float ringMask = circle(fragPos.xz, vec2(shift));
+	ringMask += circle(fragPos.xz, vec2(-shift));
+	ringMask += circle(fragPos.xz, vec2(-shift, shift));
+	ringMask += circle(fragPos.xz, vec2(shift, -shift));
+
+	float heightMask = max(0.0, (1 - fragPos.y * 2.0) - baseAlpha);
+
+	fragColor = vec4(vec3(0.8), baseAlpha + heightMask + ringMask * radiusMask);//vec4(vec3(radiusMask), 1.0);
+}
+)glsl";
+
 // --------------------------- DEBUG SHADERS ---------------------------
 
 static const char debugVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
+out vec3 fragPos;
+
 uniform mat4 projection;
 uniform mat4 view;
 
 void main() {
+	fragPos = positionIn;
 	gl_PointSize = 5.0;
 	gl_Position = projection * view * vec4(positionIn, 1.0);
 }
@@ -1330,6 +1390,8 @@ void main() {
 
 static const char debugFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
+
+in vec3 fragPos;
 
 void main() {
 	fragColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -1345,6 +1407,7 @@ GLuint starShader = 0;
 GLuint bloomShader = 0;
 GLuint planetShader = 0;
 
+GLuint jellyfishShader = 0;
 GLuint particleShader = 0;
 GLuint underwaterPostProcessShader = 0;
 GLuint initialSpectrumShader = 0;
@@ -1368,6 +1431,7 @@ void initShaders() {
 	bloomShader = compileShader(bloomVertSrc, NULL, bloomFragSrc);
 	planetShader = compileShader(sphereVertSrc, sphereGemoSrc, planetFragSrc);
 	
+	jellyfishShader = compileShader(jellyfishVertSrc, NULL, jellyfishFragSrc);
 	particleShader = compileShader(particleVertSrc, NULL, particleFragSrc);
 	underwaterPostProcessShader = compileShader(postVertSrc, NULL, underwaterPostFragSrc);
 	initialSpectrumShader = compileShader(postVertSrc, NULL, initialSpectrumFragSrc);

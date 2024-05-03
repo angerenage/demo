@@ -268,17 +268,19 @@ int main() {
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				// Drawing jellyfish
-				glUseProgram(debugShader);
+				glEnable(GL_BLEND);
 
-				glUniformMatrix4fv(glGetUniformLocation(debugShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(debugShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+				glUseProgram(jellyfishShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				glUniform1f(glGetUniformLocation(jellyfishShader, "time"), ftime);
 
 				glBindVertexArray(jellyfish.VAO);
 				glDrawElements(GL_TRIANGLES, jellyfish.indexCount, GL_UNSIGNED_INT, NULL);
 
 				// Drawing particles
-				glEnable(GL_BLEND);
-
 				glUseProgram(particleShader);
 
 				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);

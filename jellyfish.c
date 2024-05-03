@@ -1,7 +1,7 @@
 #include "jellyfish.h"
 
-#define NUM_POINTS 16
-#define NUM_SLICES 7
+#define NUM_POINTS 64
+#define NUM_SLICES 25
 
 static const float a = 3.0f, b = 1.5f;
 
