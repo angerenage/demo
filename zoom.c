@@ -115,7 +115,7 @@ int main() {
 
 	Mesh water = generateGrid((vec2){50.0, 50.0}, 1000);
 	Mesh particles = createParticles(100, 1.0);
-	Mesh jellyfish = generateDome((vec2){3.0, 1.5}, 0.0);
+	initJellyfish();
 
 	Mesh t = createText(L"Appuyez sur tab pour changer de scène");
 
@@ -268,20 +268,10 @@ int main() {
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				// Drawing jellyfish
-				glEnable(GL_BLEND);
-
-				glUseProgram(jellyfishShader);
-
-				glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-
-				glUniform1f(glGetUniformLocation(jellyfishShader, "time"), ftime);
-				glUniform3fv(glGetUniformLocation(jellyfishShader, "cameraPos"), 1, (GLfloat*)&camPos);
-
-				glBindVertexArray(jellyfish.VAO);
-				glDrawElements(GL_TRIANGLES, jellyfish.indexCount, GL_UNSIGNED_INT, NULL);
-
+				renderJellyfish(projection, view, camPos, ftime);
+				
 				// Drawing particles
+				glEnable(GL_BLEND);
 				glUseProgram(particleShader);
 
 				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
@@ -332,7 +322,6 @@ int main() {
 	freeMesh(planet);
 	freeMesh(water);
 	freeMesh(particles);
-	freeMesh(jellyfish);
 	freeMesh(t);
 	cleanupWater();
 	cleanupUtils();

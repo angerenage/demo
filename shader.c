@@ -1364,13 +1364,17 @@ void main() {
 	ringMask += circle(fragPos.xz, vec2(-shift));
 	ringMask += circle(fragPos.xz, vec2(-shift, shift));
 	ringMask += circle(fragPos.xz, vec2(shift, -shift));
+	ringMask *= radiusMask;
+
+	vec3 ring = vec3(0.9, 0.12, 0.49) * ringMask;
 
 	float heightMask = max(0.0, (1 - fragPos.y * 2.0) - baseAlpha);
+	heightMask += max(0.0, fragPos.y / 4.0);
 
 	vec3 viewDirection = normalize(fragPos - cameraPos);
 	float fresnel = clamp(0.0, 1.0, dot(viewDirection, normalize(fragPos)) * 2 + 0.5) / 4;
 
-	fragColor = vec4(vec3(0.8), baseAlpha + heightMask + fresnel + ringMask * radiusMask);
+	fragColor = vec4(vec3(0.89, 0.69, 0.7) + ring, baseAlpha + heightMask + fresnel + ringMask);//vec4(vec3(heightMask), 1.0);
 }
 )glsl";
 
@@ -1397,7 +1401,7 @@ out vec4 fragColor;
 in vec3 fragPos;
 
 void main() {
-	fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+	fragColor = vec4(1.0);
 }
 )glsl";
 

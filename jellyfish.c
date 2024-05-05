@@ -74,3 +74,97 @@ Mesh generateDome(vec2 size, float inset) {
 	
 	return (Mesh){vao, vertexNumber + 1, vertexNumber * 6};
 }
+
+Mesh genarateTentacles(vec3 pos, vec3 size, int resolution) {
+	const int vertexCount = 2 * (resolution + 1);
+	const int indiciesCount = 6 * resolution;
+
+	vec3 *vertices = (vec3*)malloc(sizeof(vec3) * vertexCount);
+	int *indices = (int*)malloc(sizeof(int) * indiciesCount);
+
+	for (int i = 0; i < vertexCount; i += 2) {
+		float x = (float)i / ((float)resolution * 2.0f);
+		float width = 1 - exp((x - 1) * 10);
+
+		vertices[i].x = pos.x - (size.x / 2) * width;
+		vertices[i].y = pos.y - size.y * x;
+		vertices[i].z = pos.z - (size.z / 2) * width;
+
+		vertices[i + 1].x = pos.x + (size.x / 2) * width;
+		vertices[i + 1].y = pos.y - size.y * x;
+		vertices[i + 1].z = pos.z + (size.z / 2) * width;
+	}
+
+	int j = 0;
+	for (int i = 0; i < indiciesCount; i += 6) {
+		indices[i] = j;
+		indices[i + 1] = j + 1;
+		indices[i + 2] = j + 3;
+
+		indices[i + 3] = j;
+		indices[i + 4] = j + 3;
+		indices[i + 5] = j + 2;
+
+		j += 2;
+	}
+
+	GLuint vao = createIndexedVAO(vertices, vertexCount, indices, indiciesCount);
+	free(vertices);
+	free(indices);
+	
+	return (Mesh){vao, vertexCount, indiciesCount};
+}
+
+static const int resolution = 20;
+static const vec2 pos = {0.75, 1.25};
+static const vec2 size = {0.75, 5.5};
+
+static Mesh extDome, intDome;
+static Mesh tentacles[4];
+
+void initJellyfish() {
+	extDome = generateDome((vec2){3.0, 1.25}, 0.0);
+	intDome = generateDome((vec2){3.0, 1.0}, 0.2);
+
+	tentacles[0] = genarateTentacles((vec3){pos.x, pos.y, 0}, (vec3){size.x, size.y, 0}, resolution);
+	tentacles[1] = genarateTentacles((vec3){0, pos.y, pos.x}, (vec3){0, size.y, size.x}, resolution);
+	tentacles[2] = genarateTentacles((vec3){-pos.x, pos.y, 0}, (vec3){size.x, size.y, 0}, resolution);
+	tentacles[3] = genarateTentacles((vec3){0, pos.y, -pos.x}, (vec3){0, size.y, size.x}, resolution);
+}
+
+void renderJellyfish(mat4 projection, mat4 view, vec3 camPos, float time) {
+	glEnable(GL_BLEND);
+	glDisable(GL_CULL_FACE);
+	glDepthFunc(GL_ALWAYS);
+
+	glUseProgram(jellyfishShader);
+
+	glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+	glUniformMatrix4fv(glGetUniformLocation(jellyfishShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+	glUniform1f(glGetUniformLocation(jellyfishShader, "time"), time);
+	glUniform3fv(glGetUniformLocation(jellyfishShader, "cameraPos"), 1, (GLfloat*)&camPos);
+
+	for (int i = 0; i < 4; i++) {
+		glBindVertexArray(tentacles[i].VAO);
+		glDrawElements(GL_TRIANGLES, tentacles[i].indexCount, GL_UNSIGNED_INT, NULL);
+	}
+
+	glBindVertexArray(intDome.VAO);
+	glDrawElements(GL_TRIANGLES, intDome.indexCount, GL_UNSIGNED_INT, NULL);
+
+	glBindVertexArray(extDome.VAO);
+	glDrawElements(GL_TRIANGLES, extDome.indexCount, GL_UNSIGNED_INT, NULL);
+
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glDepthFunc(GL_LESS);
+}
+
+void cleanupJellyfish() {
+	freeMesh(extDome);
+	freeMesh(intDome);
+	for (int i = 0; i < 4; i++) {
+		freeMesh(tentacles[i]);
+	}
+}
