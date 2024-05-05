@@ -323,6 +323,7 @@ int main() {
 	freeMesh(water);
 	freeMesh(particles);
 	freeMesh(t);
+	cleanupJellyfish();
 	cleanupWater();
 	cleanupUtils();
 
