@@ -1370,6 +1370,7 @@ void main() {
 
 	float heightMask = max(0.0, (1 - fragPos.y * 2.0) - baseAlpha);
 	heightMask += max(0.0, fragPos.y / 4.0);
+	heightMask *= radiusMask;
 
 	vec3 viewDirection = normalize(fragPos - cameraPos);
 	float fresnel = clamp(0.0, 1.0, dot(viewDirection, normalize(fragPos)) * 2 + 0.5) / 4;
