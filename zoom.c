@@ -127,7 +127,7 @@ int main() {
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
-	float defaultTime = getTime(0);
+	float defaultTime = getTime(5);
 	float lastTime = defaultTime;
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);

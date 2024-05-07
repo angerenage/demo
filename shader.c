@@ -568,71 +568,6 @@ void main() {
 
 // --------------------------- WATER SHADERS ---------------------------
 
-static const char particleVertSrc[] = R"glsl(#version 330 core
-layout(location = 0) in vec3 positionIn;
-
-uniform mat4 projection;
-uniform mat4 view;
-uniform vec3 camPos;
-uniform vec3 camDir;
-uniform float time;
-uniform float deltaTime;
-uniform float radius;
-
-out vec2 stretchFactor;
-out float pointSize;
-
-void main() {
-	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) - camPos, radius) - vec3(radius / 2.0);
-	vec3 worldPosition = relativePosition + camPos;
-
-	vec3 toEdge = radius / 2.0 - abs(relativePosition);
-	float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
-
-	vec3 cameraDirection = normalize(projection * view * vec4(camDir, 0.0)).xyz;
-	vec3 velocity = length(cameraDirection) > 0.0 ? cameraDirection : vec3(0.0, deltaTime * 10.0, 0.0);
-	stretchFactor = (vec4(velocity, 0.0)).xy;
-	pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
-
-	gl_Position = projection * view * vec4(worldPosition, 1.0);
-	gl_PointSize = 40.0;
-}
-)glsl";
-
-static const char particleFragSrc[] = R"glsl(#version 330 core
-out vec4 fragColor;
-
-in vec2 stretchFactor;
-in float pointSize;
-
-float pointLineDistance(vec2 point, vec2 lineStart, vec2 lineEnd) {
-	vec2 lineDir = lineEnd - lineStart;
-	float lineLength = length(lineDir);
-	vec2 normalizedDir = lineDir / lineLength;
-
-	float projection = dot(point - lineStart, normalizedDir);
-	projection = clamp(projection, 0.0, lineLength);
-
-	vec2 closestPoint = lineStart + normalizedDir * projection;
-	return length(point - closestPoint);
-}
-
-float gaussian(float x, float mu, float sigma) {
-	return exp(-0.5 * pow((x - mu) / sigma, 2.0));
-}
-
-void main() {
-	vec2 lineStart = stretchFactor * (0.5 - pointSize);
-	vec2 lineStop = -lineStart;
-	float dist = pointLineDistance(gl_PointCoord - vec2(0.5, 0.5), lineStart, lineStop);
-
-	float focusEffect = 1.0 - gaussian(dist, pointSize / 2.0, 0.1);
-	if (focusEffect <= pointSize / 2.0 || dist > pointSize / 2.0) discard;
-
-	fragColor = vec4(1.0, 1.0, 1.0, focusEffect);
-}
-)glsl";
-
 static const char initialSpectrumFragSrc[] = R"glsl(#version 330 core
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor1;
@@ -1251,6 +1186,71 @@ void main() {
 )glsl";
 
 // --------------------------- UNDERWATER SHADERS ---------------------------
+
+static const char particleVertSrc[] = R"glsl(#version 330 core
+layout(location = 0) in vec3 positionIn;
+
+uniform mat4 projection;
+uniform mat4 view;
+uniform vec3 camPos;
+uniform vec3 camDir;
+uniform float time;
+uniform float deltaTime;
+uniform float radius;
+
+out vec2 stretchFactor;
+out float pointSize;
+
+void main() {
+	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) - camPos * 0.5, radius) - vec3(radius / 2.0);
+	vec3 worldPosition = relativePosition + camPos;
+
+	vec3 toEdge = radius / 2.0 - abs(relativePosition);
+	float minDistanceToEdge = min(min(toEdge.x, toEdge.y), toEdge.z);
+
+	vec3 cameraDirection = normalize(projection * view * vec4(camDir, 0.0)).xyz;
+	vec3 velocity = length(cameraDirection) > 0.0 ? cameraDirection : vec3(0.0, deltaTime * 10.0, 0.0);
+	stretchFactor = (vec4(velocity, 0.0)).xy;
+	pointSize = max(0.0, 2.0 * minDistanceToEdge / radius);
+
+	gl_Position = projection * view * vec4(worldPosition, 1.0);
+	gl_PointSize = 40.0;
+}
+)glsl";
+
+static const char particleFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec2 stretchFactor;
+in float pointSize;
+
+float pointLineDistance(vec2 point, vec2 lineStart, vec2 lineEnd) {
+	vec2 lineDir = lineEnd - lineStart;
+	float lineLength = length(lineDir);
+	vec2 normalizedDir = lineDir / lineLength;
+
+	float projection = dot(point - lineStart, normalizedDir);
+	projection = clamp(projection, 0.0, lineLength);
+
+	vec2 closestPoint = lineStart + normalizedDir * projection;
+	return length(point - closestPoint);
+}
+
+float gaussian(float x, float mu, float sigma) {
+	return exp(-0.5 * pow((x - mu) / sigma, 2.0));
+}
+
+void main() {
+	vec2 lineStart = stretchFactor * (0.5 - pointSize);
+	vec2 lineStop = -lineStart;
+	float dist = pointLineDistance(gl_PointCoord - vec2(0.5, 0.5), lineStart, lineStop);
+
+	float focusEffect = 1.0 - gaussian(dist, pointSize / 2.0, 0.1);
+	if (focusEffect <= pointSize / 2.0 || dist > pointSize / 2.0) discard;
+
+	fragColor = vec4(1.0, 1.0, 1.0, focusEffect);
+}
+)glsl";
 
 static const char underwaterPostFragSrc[] = R"glsl(#version 330 core
 out vec4 fragColor;
