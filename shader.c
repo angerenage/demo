@@ -280,6 +280,7 @@ layout(triangle_strip, max_vertices = 128) out;
 out vec3 fragPosition;
 out vec3 fragNormal;
 
+uniform mat4 modele;
 uniform mat4 projection;
 uniform mat4 view;
 uniform int subdivisions;
@@ -294,7 +295,7 @@ vec3 calculateNormal(vec3 point) {
 void emitVertex(vec3 position) {
 	fragPosition = position * radius;
 	fragNormal = calculateNormal(position);
-	gl_Position = projection * view * vec4(normalize(position) * radius, 1.0);
+	gl_Position = projection * view * modele * vec4(normalize(position) * radius, 1.0);
 	EmitVertex();
 }
 
@@ -547,10 +548,7 @@ void main() {
 	vec3 viewRight = normalize(vec3(view[0][0], view[1][0], view[2][0]));
 	vec3 viewUp = normalize(vec3(view[0][1], view[1][1], view[2][1]));
 
-	float distance = length((view * vec4(vec3(0.0), 1.0)).xyz);
-	float scale = bloomRadius / distance;
-
-	vec3 position = (positionIn.x * bloomRadius * viewRight + positionIn.y * bloomRadius * viewUp) * scale;
+	vec3 position = (positionIn.x * bloomRadius * viewRight + positionIn.y * bloomRadius * viewUp);
 
 	gl_Position = projection * view * vec4(position, 1.0);
 	texCoords = positionIn.xy;
@@ -1289,7 +1287,7 @@ void main() {
 	}
 	color /= 4.0;
 
-	float fogDensity = 0.9;
+	float fogDensity = 1.0;
 	float fogFactor = exp(-depth * fogDensity);
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 	vec3 fogColor = vec3(0.0, 0.1, 0.2);

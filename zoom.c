@@ -6,6 +6,7 @@
 
 #include "glutils.h"
 #include "shader.h"
+#include "cameraController.h"
 #include "galaxy.h"
 #include "sphere.h"
 #include "water.h"
@@ -18,7 +19,6 @@ bool running = true;
 int displayedScene = 0;
 bool mousePressed = false;
 int lastX = 0, lastY = 0;
-float cameraAngleX = -0.75f, cameraAngleY = 0.0f;
 
 mat4 projection = {0};
 
@@ -79,8 +79,8 @@ void handleEvents(Display *display, Atom wmDelete) {
 					lastX = event.xmotion.x;
 					lastY = event.xmotion.y;
 
-					cameraAngleX += (float)dy * 0.001f;
-					cameraAngleY -= (float)dx * 0.001f;
+					//cameraAngleX += (float)dy * 0.001f;
+					//cameraAngleY -= (float)dx * 0.001f;
 				}
 				break;
 		}
@@ -122,24 +122,26 @@ int main() {
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
 
-	float camDistance = 10.0f;
-	vec3 lastCamPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
+	vec3 lastCamPos = initializeCameraPosition();
 	
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
-	float lastTime = 0.0;
+	float defaultTime = getTime(0);
+	float lastTime = defaultTime;
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		float ftime = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
+		ftime += defaultTime;
 		
 		handleEvents(display, wmDelete);
 
-		vec3 camPos = {camDistance * sin(cameraAngleX) * sin(cameraAngleY), camDistance * cos(cameraAngleX), camDistance * sin(cameraAngleX) * cos(cameraAngleY)};
-		mat4 view = viewMatrix(camPos, (vec3){0.0, 0.0, 0.0}, (vec3){0.0, 1.0, 0.0});
+		vec3 camPos;
+		mat4 view = getCameraMatrix(&camPos, ftime);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Drawing text
 		glUseProgram(textShader);
 
 		glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
@@ -147,164 +149,170 @@ int main() {
 
 		glBindVertexArray(t.VAO);
 		glDrawElements(GL_TRIANGLES, t.indexCount, GL_UNSIGNED_INT, NULL);
-		
-		switch (displayedScene) {
-			case 0: // Drawing galaxy
-				glEnable(GL_BLEND);
 
-				glUseProgram(galaxyShader);
+		if (ftime < getTime(3)) {
+			// Drawing galaxy
+			glEnable(GL_BLEND);
 
-				glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUseProgram(galaxyShader);
 
-				glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
-				glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
+			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(galaxyShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glDepthMask(0x00);
-				glBindVertexArray(galaxy.VAO);
-				glDrawArrays(GL_POINTS, 0, galaxy.vertexCount);
-				glDepthMask(0xFF);
+			glUniform1f(glGetUniformLocation(galaxyShader, "screenWidth"), screenSize.x);
+			glUniform1f(glGetUniformLocation(galaxyShader, "r_max"), 5.0);
 
-				glDisable(GL_BLEND);
-				break;
+			glDepthMask(0x00);
+			glBindVertexArray(galaxy.VAO);
+			glDrawArrays(GL_POINTS, 0, galaxy.vertexCount);
+			glDepthMask(0xFF);
 
-			case 1:
-				// Drawing star
-				glUseProgram(starShader);
+			glDisable(GL_BLEND);
+		}
+		if (ftime >= getTime(3) && ftime < getTime(4)) {
+			float sunScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(3)) / 3.0));
 
-				glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			mat4 modele = getIdentity();
+			scaleMatrix(&modele, (vec3){sunScale, sunScale, sunScale});
 
-				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
-				glUniform1f(glGetUniformLocation(starShader, "radius"), 2.0);
+			// Drawing star
+			glUseProgram(starShader);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, noiseTexture);
-				glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glBindVertexArray(star.VAO);
-				glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
+			glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
+			glUniform1f(glGetUniformLocation(starShader, "radius"), 2.0);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+			glUniform1i(glGetUniformLocation(starShader, "noiseTexture"), 0);
+
+			glBindVertexArray(star.VAO);
+			glDrawElements(GL_TRIANGLES, star.indexCount, GL_UNSIGNED_INT, NULL);
 
 
-				glEnable(GL_BLEND);
+			glEnable(GL_BLEND);
 
-				glUseProgram(bloomShader);
+			glUseProgram(bloomShader);
 
-				glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), 5.5);
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), sunScale * 3.0);
 
-				renderScreenQuad();
+			renderScreenQuad();
 
-				glDisable(GL_BLEND);
-				break;
+			glDisable(GL_BLEND);
+		}
+		if (ftime >= getTime(4) && ftime < getTime(5)) {
+			float planeteScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(4)) / 3.0));
 
-			case 2:
-				// Drawing planet
-				glUseProgram(planetShader);
+			mat4 modele = generateTransformationMatrix((vec3){0.0, 0.0, 50.0}, (vec3){0.0, 0.0, 0.0}, (vec3){planeteScale, planeteScale, planeteScale});
 
-				glUniformMatrix4fv(glGetUniformLocation(planetShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(planetShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			// Drawing planet
+			glUseProgram(planetShader);
 
-				glUniform1i(glGetUniformLocation(planetShader, "subdivisions"), 6);
-				glUniform1f(glGetUniformLocation(planetShader, "radius"), 1.0);
+			glUniformMatrix4fv(glGetUniformLocation(planetShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(planetShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(planetShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, noiseTexture);
-				glUniform1i(glGetUniformLocation(planetShader, "noiseTexture"), 0);
-				glUniform3f(glGetUniformLocation(planetShader, "lightDir"), 0.0, 1.0, 0.0);
+			glUniform1i(glGetUniformLocation(planetShader, "subdivisions"), 6);
+			glUniform1f(glGetUniformLocation(planetShader, "radius"), 1.0);
 
-				glBindVertexArray(planet.VAO);
-				glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
-				break;
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+			glUniform1i(glGetUniformLocation(planetShader, "noiseTexture"), 0);
+			glUniform3f(glGetUniformLocation(planetShader, "lightDir"), 0.0, 0.5, -1.0);
 
-			case 3:
-				// Drawing water
-				updateSpectrum(ftime);
+			glBindVertexArray(planet.VAO);
+			glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
+		}
+		if (ftime >= getTime(5) && ftime < getTime(7)) {
+			// Drawing water
+			updateSpectrum(ftime);
 
-				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				glViewport(0, 0, screenSize.x, screenSize.y);
+			glViewport(0, 0, screenSize.x, screenSize.y);
 
-				glUseProgram(waterShader);
+			glUseProgram(waterShader);
 
-				glUniformMatrix4fv(glGetUniformLocation(waterShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(waterShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniformMatrix4fv(glGetUniformLocation(waterShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(waterShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
-				glUniform1i(glGetUniformLocation(waterShader, "_DisplacementTextures"), 0);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, slopeTextures);
-				glUniform1i(glGetUniformLocation(waterShader, "_SlopeTextures"), 1);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
+			glUniform1i(glGetUniformLocation(waterShader, "_DisplacementTextures"), 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, slopeTextures);
+			glUniform1i(glGetUniformLocation(waterShader, "_SlopeTextures"), 1);
 
-				glUniform3fv(glGetUniformLocation(waterShader, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
+			glUniform3fv(glGetUniformLocation(waterShader, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
 
-				glBindVertexArray(water.VAO);
-				glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
+			glBindVertexArray(water.VAO);
+			glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
 
-				// Water scene post-processing
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glUseProgram(atmospherePostProcessShader);
+			// Water scene post-processing
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glUseProgram(atmospherePostProcessShader);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
-				glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderDepthTexture"), 0);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
-				glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderColorTexture"), 1);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
+			glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderDepthTexture"), 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
+			glUniform1i(glGetUniformLocation(atmospherePostProcessShader, "renderColorTexture"), 1);
 
-				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform3fv(glGetUniformLocation(atmospherePostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
+			glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform3fv(glGetUniformLocation(atmospherePostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
 
-				renderScreenQuad();
-				break;
+			renderScreenQuad();
+		}
+		if (ftime >= getTime(7)) {
+			// Underwater scene
+			glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			case 4:
-				// Underwater scene
-				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			// Drawing jellyfish
+			renderJellyfish(projection, view, camPos, ftime);
+			
+			// Drawing particles
+			glEnable(GL_BLEND);
+			glUseProgram(particleShader);
 
-				// Drawing jellyfish
-				renderJellyfish(projection, view, camPos, ftime);
-				
-				// Drawing particles
-				glEnable(GL_BLEND);
-				glUseProgram(particleShader);
+			glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(particleShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glUniformMatrix4fv(glGetUniformLocation(particleShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(particleShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform3fv(glGetUniformLocation(particleShader, "camPos"), 1, (GLfloat*)&camPos);
+			glUniform1f(glGetUniformLocation(particleShader, "radius"), 1.0);
+			glUniform1f(glGetUniformLocation(particleShader, "time"), ftime);
+			glUniform1f(glGetUniformLocation(particleShader, "deltaTime"), ftime - lastTime);
+			glUniform3f(glGetUniformLocation(particleShader, "camDir"), lastCamPos.x - camPos.x, lastCamPos.y - camPos.y, lastCamPos.z - camPos.z);
 
-				glUniform3fv(glGetUniformLocation(particleShader, "camPos"), 1, (GLfloat*)&camPos);
-				glUniform1f(glGetUniformLocation(particleShader, "radius"), 1.0);
-				glUniform1f(glGetUniformLocation(particleShader, "time"), ftime);
-				glUniform1f(glGetUniformLocation(particleShader, "deltaTime"), ftime - lastTime);
-				glUniform3f(glGetUniformLocation(particleShader, "camDir"), lastCamPos.x - camPos.x, lastCamPos.y - camPos.y, lastCamPos.z - camPos.z);
+			glBindVertexArray(particles.VAO);
+			glDrawArrays(GL_POINTS, 0, particles.vertexCount);
 
-				glBindVertexArray(particles.VAO);
-				glDrawArrays(GL_POINTS, 0, particles.vertexCount);
+			glDisable(GL_BLEND);
 
-				glDisable(GL_BLEND);
+			// Underwater scene post-processing
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glUseProgram(underwaterPostProcessShader);
 
-				// Underwater scene post-processing
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glUseProgram(underwaterPostProcessShader);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
+			glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterDepthTexture"), 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
+			glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterColorTexture"), 1);
 
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderDepthTexture);
-				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterDepthTexture"), 0);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderColorTexture);
-				glUniform1i(glGetUniformLocation(underwaterPostProcessShader, "underwaterColorTexture"), 1);
+			glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
 
-				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
-				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
-
-				renderScreenQuad();
-				break;
+			renderScreenQuad();
 		}
 
 		checkOpenGLError();

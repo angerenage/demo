@@ -24,9 +24,9 @@ typedef struct {
 mat4 getIdentity();
 mat4 projectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane);
 mat4 viewMatrix(vec3 position, vec3 focus, vec3 up);
-void translationMatrix(mat4 matrix, vec3 translation);
-void rotationMatrix(mat4 matrix, vec3 rotation);
-void scaleMatrix(mat4 matrix, vec3 scale);
+void translationMatrix(mat4 *matrix, vec3 translation);
+void rotationMatrix(mat4 *matrix, vec3 rotation);
+void scaleMatrix(mat4 *matrix, vec3 scale);
 mat4 generateTransformationMatrix(vec3 pos, vec3 rot, vec3 scl);
 
 vec3 vec3_add(vec3 a, vec3 b);

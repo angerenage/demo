@@ -48,13 +48,13 @@ mat4 viewMatrix(vec3 position, vec3 focus, vec3 up) {
 	return matrix;
 }
 
-void translationMatrix(mat4 matrix, vec3 translation) {
-	matrix.m[3][0] = translation.x;
-	matrix.m[3][1] = translation.y;
-	matrix.m[3][2] = translation.z;
+void translationMatrix(mat4 *matrix, vec3 translation) {
+	matrix->m[3][0] = translation.x;
+	matrix->m[3][1] = translation.y;
+	matrix->m[3][2] = translation.z;
 }
 
-void rotationMatrix(mat4 matrix, vec3 rotation) {
+void rotationMatrix(mat4 *matrix, vec3 rotation) {
 	float cp = cos(rotation.x);
 	float sp = sin(rotation.x);
 	float cy = cos(rotation.y);
@@ -62,28 +62,28 @@ void rotationMatrix(mat4 matrix, vec3 rotation) {
 	float cr = cos(rotation.z);
 	float sr = sin(rotation.z);
 
-	matrix.m[0][0] = cr * cy;
-	matrix.m[0][1] = cr * sy * sp - sr * cp;
-	matrix.m[0][2] = cr * sy * cp + sr * sp;
-	matrix.m[1][0] = sr * cy;
-	matrix.m[1][1] = sr * sy * sp + cr * cp;
-	matrix.m[1][2] = sr * sy * cp - cr * sp;
-	matrix.m[2][0] = -sy;
-	matrix.m[2][1] = cy * sp;
-	matrix.m[2][2] = cy * cp;
+	matrix->m[0][0] = cr * cy;
+	matrix->m[0][1] = cr * sy * sp - sr * cp;
+	matrix->m[0][2] = cr * sy * cp + sr * sp;
+	matrix->m[1][0] = sr * cy;
+	matrix->m[1][1] = sr * sy * sp + cr * cp;
+	matrix->m[1][2] = sr * sy * cp - cr * sp;
+	matrix->m[2][0] = -sy;
+	matrix->m[2][1] = cy * sp;
+	matrix->m[2][2] = cy * cp;
 }
 
-void scaleMatrix(mat4 matrix, vec3 scale) {
-	matrix.m[0][0] *= scale.x;
-	matrix.m[1][1] *= scale.y;
-	matrix.m[2][2] *= scale.z;
+void scaleMatrix(mat4 *matrix, vec3 scale) {
+	matrix->m[0][0] *= scale.x;
+	matrix->m[1][1] *= scale.y;
+	matrix->m[2][2] *= scale.z;
 }
 
 mat4 generateTransformationMatrix(vec3 pos, vec3 rot, vec3 scl) {
 	mat4 matrix = getIdentity();
-	translationMatrix(matrix, pos);
-	rotationMatrix(matrix, rot);
-	scaleMatrix(matrix, scl);
+	translationMatrix(&matrix, pos);
+	rotationMatrix(&matrix, rot);
+	scaleMatrix(&matrix, scl);
 	return matrix;
 }
 
