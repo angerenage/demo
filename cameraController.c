@@ -146,10 +146,9 @@ static const vec3 surfacePos = {0.0, 2.0, 0.0};
 static const vec3 sunDir = (vec3){0.0, 0.0, -4.86};
 static CurveDef waterScene(vec3 startPos, vec3 startDir) {
 	vec3 waterSceneStartPos = vec3_add(vec3_scale(normalize(vec3_scale(sunDir, 1)), 50), surfacePos);
-	waterSceneStartPos.y = 50.0;
-	vec3 waterSceneStartDir = {0.0, -1.0, 0.0};
+	waterSceneStartPos.y = 100.0;
 
-	return (CurveDef){waterSceneStartPos, vec3_add(vec3_scale(waterSceneStartDir, 5), waterSceneStartPos), vec3_add(vec3_scale(sunDir, 3), surfacePos), surfacePos};
+	return (CurveDef){waterSceneStartPos, vec3_add((vec3){0.0, -25.0, 0.0}, waterSceneStartPos), vec3_add(vec3_scale(sunDir, 5), surfacePos), surfacePos};
 }
 
 static CurveDef waterDive(vec3 startPos, vec3 startDir) {
@@ -160,10 +159,10 @@ static CurveDef waterDive(vec3 startPos, vec3 startDir) {
 }
 
 static CurveDef underwaterScene(vec3 startPos, vec3 startDir) {
-	startPos = (vec3){17.0, 10.0, 30.0};
+	startPos = (vec3){17.0, 20.0, 30.0};
 	vec3 endPos = vec3_scale(normalize((vec3){5.0, 1.0, 9.0}), 10.0);
 
-	return (CurveDef){startPos, vec3_add(vec3_scale((vec3){0.0, -1.0, 0.0}, 1), startPos), vec3_scale(endPos, 1.5), endPos};
+	return (CurveDef){startPos, vec3_add(vec3_scale((vec3){0.0, -1.0, 0.0}, 1), startPos), vec3_scale(endPos, 3), endPos};
 }
 
 // Curve computations
@@ -175,7 +174,7 @@ static const BezierParams curves[] = {
 	{6.0, sunScene},
 	{5.0, sunToPlanet},
 	{1.0, planetZoom},
-	{4.0, waterScene},
+	{5.0, waterScene},
 	{3.0, waterDive},
 	{4.0, underwaterScene}
 };

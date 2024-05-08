@@ -201,6 +201,8 @@ int main() {
 			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), sunScale * 3.0);
 
+			glUniform3f(glGetUniformLocation(bloomShader, "bloomColor"), 1.0, 0.0, 0.0);
+
 			renderScreenQuad();
 
 			glDisable(GL_BLEND);
@@ -224,9 +226,25 @@ int main() {
 			glBindTexture(GL_TEXTURE_2D, noiseTexture);
 			glUniform1i(glGetUniformLocation(planetShader, "noiseTexture"), 0);
 			glUniform3f(glGetUniformLocation(planetShader, "lightDir"), 0.0, 0.5, -1.0);
+			glUniform3fv(glGetUniformLocation(planetShader, "camPos"), 1, (GLfloat*)&camPos);
 
 			glBindVertexArray(planet.VAO);
 			glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
+
+			glEnable(GL_BLEND);
+
+			glUseProgram(bloomShader);
+
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), planeteScale * 1.2);
+
+			glUniform3f(glGetUniformLocation(bloomShader, "bloomColor"), 0.56, 0.8, 1.0);
+
+			renderScreenQuad();
+
+			glDisable(GL_BLEND);
 		}
 		if (ftime >= getTime(6) && ftime < getTime(8)) {
 			// Drawing water

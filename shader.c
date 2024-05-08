@@ -396,7 +396,10 @@ in vec3 fragPosition;
 in vec3 fragNormal;
 
 uniform vec3 lightDir;
+uniform vec3 camPos;
 uniform sampler2D noiseTexture;
+
+const vec3 sunColor = vec3(3.0117648, 1.945098, 0.8784314);
 
 void main() {
 	float sharpness = 1.0;
@@ -412,7 +415,14 @@ void main() {
 				 colSide * blendWeights.x +
 				 colTop * blendWeights.y;
 
-	fragColor = vec4(vec3(noise) * dot(fragNormal, lightDir), 1.0);
+	vec3 color = vec3(0.451, 0.495, 0.50) * (vec3(noise) * 0.01 + 0.5);
+
+	vec3 viewDir = normalize(camPos - (fragPosition + noise.xyz));
+	vec3 reflectDir = reflect(lightDir, fragNormal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 15);
+
+	color += (normalize(sunColor) * 2/3 + 0.33) * spec / 5;
+	fragColor = vec4(color * dot(fragNormal, lightDir), 1.0);
 }
 )glsl";
 
@@ -540,6 +550,7 @@ layout(location = 0) in vec3 positionIn;
 
 out vec2 texCoords;
 
+uniform mat4 modele;
 uniform mat4 projection;
 uniform mat4 view;
 uniform float bloomRadius;
@@ -550,7 +561,7 @@ void main() {
 
 	vec3 position = (positionIn.x * bloomRadius * viewRight + positionIn.y * bloomRadius * viewUp);
 
-	gl_Position = projection * view * vec4(position, 1.0);
+	gl_Position = projection * view * modele * vec4(position, 1.0);
 	texCoords = positionIn.xy;
 }
 )glsl";
@@ -560,9 +571,11 @@ out vec4 fragColor;
 
 in vec2 texCoords;
 
+uniform vec3 bloomColor;
+
 void main() {
 	if (length(texCoords) > 1.0) discard;
-	fragColor = vec4(1.0, 0.0, 0.0, (1.0 - length(texCoords)) * 1.5);
+	fragColor = vec4(bloomColor, (1.0 - length(texCoords)) * 1.5);
 }
 )glsl";
 
