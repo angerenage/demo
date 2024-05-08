@@ -848,7 +848,7 @@ uniform sampler2DArray _SlopeTextures;
 uniform vec3 _WorldSpaceCameraPos;
 
 
-const vec3 _SunDirection = vec3(-1.29, -1.0, -4.86);
+const vec3 _SunDirection = vec3(0.0, -1.0, -4.86);
 const float _Roughness = 0.075, _FoamRoughnessModifier = 0.0;
 const float _NormalStrength = 1.0;
 
@@ -1136,7 +1136,7 @@ vec3 reconstructWorldPos(float depth, vec2 TexCoords) {
 	return worldSpaceLocation.xyz / worldSpaceLocation.w;
 }
 
-const vec3 _SunDirection = vec3(-1.29, -1.0, -4.86);
+const vec3 _SunDirection = vec3(0.0, -1.0, -4.86);
 const vec3 _SunColor = vec3(3.0117648, 1.945098, 0.8784314);
 const float _FogHeight = 218.0;
 const float _FogAttenuation = 1.63;
@@ -1202,7 +1202,7 @@ out vec2 stretchFactor;
 out float pointSize;
 
 void main() {
-	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) - camPos * 0.5, radius) - vec3(radius / 2.0);
+	vec3 relativePosition = mod(positionIn - vec3(0.0, time / 40.0, 0.0) - camPos * 0.1, radius) - vec3(radius / 2.0);
 	vec3 worldPosition = relativePosition + camPos;
 
 	vec3 toEdge = radius / 2.0 - abs(relativePosition);

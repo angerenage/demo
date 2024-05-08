@@ -121,7 +121,7 @@ static CurveDef hideGalaxy(vec3 startPos, vec3 startDir) {
 	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 1.0), startPos), (vec3){sunPos.x, startPos.y, sunPos.z}, sunPos};
 }
 
-static const vec3 planetPos = {0.0, 0.0, 48.0};
+static const vec3 planetPos = {0.0, 0., 50.0};
 static CurveDef sunScene(vec3 startPos, vec3 startDir) {
 	vec3 sunSceneStartPos = {0.0, 0.0, -100.0};
 
@@ -131,17 +131,25 @@ static CurveDef sunScene(vec3 startPos, vec3 startDir) {
 }
 
 static CurveDef sunToPlanet(vec3 startPos, vec3 startDir) {
-	vec3 endDir = normalize(vec3_subtract(startPos, planetPos));
-	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 10), startPos), vec3_add(vec3_scale(endDir, 30), planetPos), planetPos};
+	vec3 endPos = vec3_subtract(planetPos, (vec3){0.0, 0.7, 2.0});
+	vec3 endDir = normalize(vec3_subtract(startPos, endPos));
+	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 10), startPos), vec3_add(vec3_scale(endDir, 30), endPos), endPos};
+}
+
+static CurveDef planetZoom(vec3 startPos, vec3 startDir) {
+	vec3 endPos = vec3_subtract(planetPos, normalize((vec3){0.0, 0.6, 1.0}));
+	vec3 endDir = vec3_subtract(endPos, planetPos);
+	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 0.5), startPos), vec3_add(vec3_scale(endDir, 0.4), endPos), endPos};
 }
 
 static const vec3 surfacePos = {0.0, 2.0, 0.0};
-static const vec3 sunDir = (vec3){-1.29, 0.0, -4.86};
+static const vec3 sunDir = (vec3){0.0, 0.0, -4.86};
 static CurveDef waterScene(vec3 startPos, vec3 startDir) {
-	vec3 waterSceneStartPos, waterSceneStartDir;
-	defaultCameraTransforms(&waterSceneStartPos, &waterSceneStartDir, 50.0, (vec2){-0.5, 0.0});
+	vec3 waterSceneStartPos = vec3_add(vec3_scale(normalize(vec3_scale(sunDir, 1)), 50), surfacePos);
+	waterSceneStartPos.y = 50.0;
+	vec3 waterSceneStartDir = {0.0, -1.0, 0.0};
 
-	return (CurveDef){waterSceneStartPos, vec3_add(vec3_scale(waterSceneStartDir, 2), waterSceneStartPos), vec3_add(vec3_scale(sunDir, 2), surfacePos), surfacePos};
+	return (CurveDef){waterSceneStartPos, vec3_add(vec3_scale(waterSceneStartDir, 5), waterSceneStartPos), vec3_add(vec3_scale(sunDir, 3), surfacePos), surfacePos};
 }
 
 static CurveDef waterDive(vec3 startPos, vec3 startDir) {
@@ -152,8 +160,8 @@ static CurveDef waterDive(vec3 startPos, vec3 startDir) {
 }
 
 static CurveDef underwaterScene(vec3 startPos, vec3 startDir) {
-	startPos = (vec3){0.0, 10.0, 30.0};
-	vec3 endPos = vec3_scale(normalize((vec3){0.0, 1.0, 9.0}), 10.0);
+	startPos = (vec3){17.0, 10.0, 30.0};
+	vec3 endPos = vec3_scale(normalize((vec3){5.0, 1.0, 9.0}), 10.0);
 
 	return (CurveDef){startPos, vec3_add(vec3_scale((vec3){0.0, -1.0, 0.0}, 1), startPos), vec3_scale(endPos, 1.5), endPos};
 }
@@ -166,6 +174,7 @@ static const BezierParams curves[] = {
 	{5.0, hideGalaxy},
 	{6.0, sunScene},
 	{5.0, sunToPlanet},
+	{1.0, planetZoom},
 	{4.0, waterScene},
 	{3.0, waterDive},
 	{4.0, underwaterScene}

@@ -127,7 +127,7 @@ int main() {
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
-	float defaultTime = getTime(5);
+	float defaultTime = getTime(4);
 	float lastTime = defaultTime;
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -205,7 +205,7 @@ int main() {
 
 			glDisable(GL_BLEND);
 		}
-		if (ftime >= getTime(4) && ftime < getTime(5)) {
+		if (ftime >= getTime(4) && ftime < getTime(6)) {
 			float planeteScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(4)) / 3.0));
 
 			mat4 modele = generateTransformationMatrix((vec3){0.0, 0.0, 50.0}, (vec3){0.0, 0.0, 0.0}, (vec3){planeteScale, planeteScale, planeteScale});
@@ -228,7 +228,7 @@ int main() {
 			glBindVertexArray(planet.VAO);
 			glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
 		}
-		if (ftime >= getTime(5) && ftime < getTime(7)) {
+		if (ftime >= getTime(6) && ftime < getTime(8)) {
 			// Drawing water
 			updateSpectrum(ftime);
 
@@ -271,7 +271,7 @@ int main() {
 
 			renderScreenQuad();
 		}
-		if (ftime >= getTime(7)) {
+		if (ftime >= getTime(8)) {
 			// Underwater scene
 			glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
