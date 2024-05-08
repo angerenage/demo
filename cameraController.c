@@ -139,7 +139,10 @@ static CurveDef sunToPlanet(vec3 startPos, vec3 startDir) {
 static CurveDef planetZoom(vec3 startPos, vec3 startDir) {
 	vec3 endPos = vec3_subtract(planetPos, normalize((vec3){0.0, 0.6, 1.0}));
 	vec3 endDir = vec3_subtract(endPos, planetPos);
-	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 0.5), startPos), vec3_add(vec3_scale(endDir, 0.4), endPos), endPos};
+
+	endPos = vec3_add(vec3_scale(endDir, 0.1), endPos);
+
+	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 0.5), startPos), vec3_add(vec3_scale(endDir, 0.3), endPos), endPos};
 }
 
 static const vec3 surfacePos = {0.0, 2.0, 0.0};

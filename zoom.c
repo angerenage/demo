@@ -113,7 +113,8 @@ int main() {
 	Mesh star = generateIcosphere(2);
 	Mesh planet = generateIcosphere(2);
 
-	Mesh water = generateGrid((vec2){50.0, 50.0}, 1000);
+	vec2 waterSize = {50.0, 50.0};
+	Mesh water = generateGrid(waterSize, 500);
 	Mesh particles = createParticles(100, 1.0);
 	initJellyfish();
 
@@ -127,7 +128,7 @@ int main() {
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
-	float defaultTime = getTime(4);
+	float defaultTime = getTime(0);
 	float lastTime = defaultTime;
 	while (running) {
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -172,13 +173,13 @@ int main() {
 		if (ftime >= getTime(3) && ftime < getTime(4)) {
 			float sunScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(3)) / 3.0));
 
-			mat4 modele = getIdentity();
-			scaleMatrix(&modele, (vec3){sunScale, sunScale, sunScale});
+			mat4 model = getIdentity();
+			scaleMatrix(&model, (vec3){sunScale, sunScale, sunScale});
 
 			// Drawing star
 			glUseProgram(starShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(starShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(starShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 			glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
@@ -197,9 +198,10 @@ int main() {
 
 			glUseProgram(bloomShader);
 
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), sunScale * 3.0);
+			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), 3.0);
 
 			glUniform3f(glGetUniformLocation(bloomShader, "bloomColor"), 1.0, 0.0, 0.0);
 
@@ -209,13 +211,14 @@ int main() {
 		}
 		if (ftime >= getTime(4) && ftime < getTime(6)) {
 			float planeteScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(4)) / 3.0));
+			vec3 planetPos = {0.0, 0.0, 50.0};
 
-			mat4 modele = generateTransformationMatrix((vec3){0.0, 0.0, 50.0}, (vec3){0.0, 0.0, 0.0}, (vec3){planeteScale, planeteScale, planeteScale});
+			mat4 model = generateTransformationMatrix(planetPos, (vec3){0.0, 0.0, 0.0}, (vec3){planeteScale, planeteScale, planeteScale});
 
 			// Drawing planet
 			glUseProgram(planetShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(planetShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(planetShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 			glUniformMatrix4fv(glGetUniformLocation(planetShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(planetShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
@@ -227,6 +230,7 @@ int main() {
 			glUniform1i(glGetUniformLocation(planetShader, "noiseTexture"), 0);
 			glUniform3f(glGetUniformLocation(planetShader, "lightDir"), 0.0, 0.5, -1.0);
 			glUniform3fv(glGetUniformLocation(planetShader, "camPos"), 1, (GLfloat*)&camPos);
+			glUniform1f(glGetUniformLocation(planetShader, "camDist"), length(vec3_subtract(camPos, planetPos)) - 1.0);
 
 			glBindVertexArray(planet.VAO);
 			glDrawElements(GL_TRIANGLES, planet.indexCount, GL_UNSIGNED_INT, NULL);
@@ -235,10 +239,10 @@ int main() {
 
 			glUseProgram(bloomShader);
 
-			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "modele"), 1, GL_FALSE, (GLfloat*)&modele);
+			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 			glUniformMatrix4fv(glGetUniformLocation(bloomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), planeteScale * 1.2);
+			glUniform1f(glGetUniformLocation(bloomShader, "bloomRadius"), 1.2);
 
 			glUniform3f(glGetUniformLocation(bloomShader, "bloomColor"), 0.56, 0.8, 1.0);
 
@@ -270,7 +274,20 @@ int main() {
 			glUniform3fv(glGetUniformLocation(waterShader, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
 
 			glBindVertexArray(water.VAO);
-			glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
+
+			mat4 model = getIdentity();
+			const float tile = 4;
+			for (float x = -waterSize.x * (tile / 2); x < waterSize.x * (tile / 2); x += waterSize.x) {
+				for (float y = -waterSize.y * (tile / 2); y < waterSize.y * (tile / 2); y += waterSize.y) {
+					translationMatrix(&model, (vec3){x, 0.0, y});
+					glUniformMatrix4fv(glGetUniformLocation(waterShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
+
+					glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
+				}
+				printf("\n");
+			}
+
+			printf("\n\n");
 
 			// Water scene post-processing
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

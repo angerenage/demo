@@ -280,7 +280,7 @@ layout(triangle_strip, max_vertices = 128) out;
 out vec3 fragPosition;
 out vec3 fragNormal;
 
-uniform mat4 modele;
+uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 uniform int subdivisions;
@@ -295,7 +295,7 @@ vec3 calculateNormal(vec3 point) {
 void emitVertex(vec3 position) {
 	fragPosition = position * radius;
 	fragNormal = calculateNormal(position);
-	gl_Position = projection * view * modele * vec4(normalize(position) * radius, 1.0);
+	gl_Position = projection * view * model * vec4(normalize(position) * radius, 1.0);
 	EmitVertex();
 }
 
@@ -397,9 +397,12 @@ in vec3 fragNormal;
 
 uniform vec3 lightDir;
 uniform vec3 camPos;
+uniform float camDist;
 uniform sampler2D noiseTexture;
 
 const vec3 sunColor = vec3(3.0117648, 1.945098, 0.8784314);
+const vec3 waterColor = vec3(0.4, 0.437, 0.443);
+const float fadeDist = 0.5;
 
 void main() {
 	float sharpness = 1.0;
@@ -415,14 +418,19 @@ void main() {
 				 colSide * blendWeights.x +
 				 colTop * blendWeights.y;
 
-	vec3 color = vec3(0.451, 0.495, 0.50) * (vec3(noise) * 0.01 + 0.5);
+	vec3 color = waterColor * (vec3(noise) * 0.01 + 0.5);
 
 	vec3 viewDir = normalize(camPos - (fragPosition + noise.xyz));
 	vec3 reflectDir = reflect(lightDir, fragNormal);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 15);
 
-	color += (normalize(sunColor) * 2/3 + 0.33) * spec / 5;
-	fragColor = vec4(color * dot(fragNormal, lightDir), 1.0);
+	color += (normalize(sunColor) + 0.3) * spec / 5;
+
+	float dist = min(camDist, fadeDist);
+	dist *= 1 / fadeDist;
+	float diff = dot(fragNormal, lightDir);
+
+	fragColor = vec4(color * mix(1.0, 0.0, dist) + color * diff, 1.0);
 }
 )glsl";
 
@@ -550,7 +558,7 @@ layout(location = 0) in vec3 positionIn;
 
 out vec2 texCoords;
 
-uniform mat4 modele;
+uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 uniform float bloomRadius;
@@ -561,7 +569,7 @@ void main() {
 
 	vec3 position = (positionIn.x * bloomRadius * viewRight + positionIn.y * bloomRadius * viewUp);
 
-	gl_Position = projection * view * modele * vec4(position, 1.0);
+	gl_Position = projection * view * model * vec4(position, 1.0);
 	texCoords = positionIn.xy;
 }
 )glsl";
@@ -818,6 +826,7 @@ void main() {
 static const char waterVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
+uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform sampler2DArray _DisplacementTextures;
@@ -836,13 +845,13 @@ void main() {
 		displacement += texture(_DisplacementTextures, vec3(UV, i)).xyz;
 	}
 
-	fragPos = positionIn + displacement;
+	fragPos = vec3(model * vec4(positionIn, 1.0)) + displacement;
 
-	vec4 clipPos = projection * view * vec4(fragPos, 1.0);
+	vec4 clipPos = projection * view * model * vec4(fragPos, 1.0);
 	depth = clipPos.z / clipPos.w;
 
 	displacement = mix(vec3(0.0), displacement, pow(clamp(depth, 0.0, 1.0), _DisplacementDepthAttenuation));
-	gl_Position = projection * view * vec4(positionIn + displacement, 1.0);
+	gl_Position = projection * view * model * vec4(positionIn + displacement, 1.0);
 }
 )glsl";
 
