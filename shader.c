@@ -867,6 +867,7 @@ in float depth;
 uniform sampler2DArray _DisplacementTextures;
 uniform sampler2DArray _SlopeTextures;
 
+uniform mat4 model;
 uniform vec3 _WorldSpaceCameraPos;
 
 
@@ -922,7 +923,7 @@ void main() {
 	slopes *= _NormalStrength;
 	float foam = mix(0.0, clamp(displacementFoam.a, 0.0, 1.0), pow(depth, _FoamDepthAttenuation));
 
-	mat3 normalMatrix = mat3(1.0); // No transformation
+	mat3 normalMatrix = mat3(model);
 	normalMatrix = inverse(transpose(normalMatrix));
 
 	vec3 macroNormal = vec3(0, 1, 0);

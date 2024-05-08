@@ -257,10 +257,7 @@ int main() {
 
 						glDrawElements(GL_TRIANGLES, water.indexCount, GL_UNSIGNED_INT, NULL);
 					}
-					printf("\n");
 				}
-
-				printf("\n\n");
 
 				// Water scene post-processing
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
