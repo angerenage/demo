@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "glutils.h"
+#include "audio.h"
 #include "shader.h"
 #include "cameraController.h"
 #include "galaxy.h"
@@ -59,7 +60,9 @@ void handleEvents(Display *display, Atom wmDelete) {
 }
 
 int main() {
+	initAudio();
 	initWindow(screenSize);
+	
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
@@ -341,6 +344,7 @@ int main() {
 	cleanupWater();
 	cleanupUtils();
 
+	cleanupAudio();
 	cleanupWindow();
 
 	return 0;
