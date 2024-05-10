@@ -48,10 +48,11 @@ To build this project, you will need GCC for compiling and OpenGL libraries for 
 	sudo apt-get update
 	sudo apt-get install -y libx11-dev libgl1-mesa-dev
 	```
+	You will also need libmikmod found at https://sourceforge.net/projects/mikmod/files/libmikmod/3.3.11.1/libmikmod-3.3.11.1.tar.gz/download
 
 2. Compile the project:
 	```bash
-	gcc -I./include ./**.c -o zoomDemo
+	gcc -I./include ./**.c -lm -lX11 -lGL -lmikmod -o zoomDemo
 	```
 
 3. Run the executable:
