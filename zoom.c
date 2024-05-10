@@ -19,6 +19,8 @@ vec2 screenSize = {600.0, 800.0};
 bool running = true;
 bool launched = false;
 
+struct timespec start;
+
 mat4 projection = {0};
 
 void handleEvents(Display *display, Atom wmDelete) {
@@ -52,6 +54,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 					}
 					else if (key == XK_space) {
 						launched = true;
+						clock_gettime(CLOCK_MONOTONIC, &start);
 					}
 				}
 				break;
@@ -99,7 +102,7 @@ int main() {
 
 	vec3 lastCamPos = initializeCameraPosition();
 	
-	struct timespec start, end;
+	struct timespec end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
 	float defaultTime = getTime(0);
