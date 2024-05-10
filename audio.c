@@ -10,7 +10,7 @@ void initAudio() {
 		exit(EXIT_FAILURE);
 	}
 
-	MODULE *module = Player_Load("./.build/2ND_PM.S3M", 64, 0); // 64 voices
+	MODULE *module = Player_Load("./mods/2ND_PM.S3M", 64, 0); // 64 voices
 	if (module) {
 		Player_Start(module);
 		while (Player_Active()) {
