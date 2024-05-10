@@ -108,7 +108,7 @@ Mesh createParticles(int pointCount, float radius) {
 }
 
 void initWater(vec2 screenSize) {
-	updateUnderwaterTextures(screenSize);
+	updatePostProcessTextures(screenSize);
 
 	//computing initial spectrum
 	initialSpectrumTex = createTextureArray(frequencySize, frequencySize, 4);
@@ -249,7 +249,7 @@ void updateSpectrum(float time) {
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
-void updateUnderwaterTextures(vec2 screenSize) {
+void updatePostProcessTextures(vec2 screenSize) {
 	if (renderDepthTexture || renderColorTexture || postProcessFBO) {
 		glDeleteTextures(1, &renderDepthTexture);
 		glDeleteTextures(1, &renderColorTexture);

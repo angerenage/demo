@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mikmod.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -8,8 +10,9 @@
 
 #define PCM_DEVICE "default"
 
+extern pthread_t audioThread;
+
 void initAudio();
-
-void send_midi_note(int portid, int note, int velocity, int channel, bool on_off);
-
+void playMod(const char *filename);
+void stopSound();
 void cleanupAudio();

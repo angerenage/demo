@@ -17,6 +17,6 @@ Mesh createParticles(int pointCount, float radius);
 
 void initWater();
 void updateSpectrum(float time);
-void updateUnderwaterTextures(vec2 screenSize);
+void updatePostProcessTextures(vec2 screenSize);
 
 void cleanupWater();

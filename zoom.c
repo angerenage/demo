@@ -41,7 +41,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 
 					screenSize = (vec2){(float)xce.width, (float)xce.height};
 
-					updateUnderwaterTextures(screenSize);
+					updatePostProcessTextures(screenSize);
 					projection = projectionMatrix(M_PI / 4.0, (float)xce.width / (float)xce.height, 0.1f, 1000.0f);
 				}
 				break;
@@ -55,6 +55,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 					else if (key == XK_space) {
 						launched = true;
 						clock_gettime(CLOCK_MONOTONIC, &start);
+						playMod("./mods/2ND_PM.S3M");
 					}
 				}
 				break;
@@ -102,20 +103,17 @@ int main() {
 
 	vec3 lastCamPos = initializeCameraPosition();
 	
-	struct timespec end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
-
 	float defaultTime = getTime(0);
 	float lastTime = defaultTime;
+
 	while (running) {
+		handleEvents(display, wmDelete);
+
+		struct timespec end;
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		float ftime = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
 		ftime += defaultTime;
-		
-		handleEvents(display, wmDelete);
-
-		vec3 camPos;
-		mat4 view = getCameraMatrix(&camPos, ftime);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -130,6 +128,9 @@ int main() {
 			glDrawElements(GL_TRIANGLES, t.indexCount, GL_UNSIGNED_INT, NULL);
 		}
 		else {
+			vec3 camPos;
+			mat4 view = getCameraMatrix(&camPos, ftime);
+
 			if (ftime < getTime(3)) {
 				// Drawing galaxy
 				glEnable(GL_BLEND);
@@ -325,17 +326,20 @@ int main() {
 
 				renderScreenQuad();
 			}
+
+			lastCamPos.x = camPos.x;
+			lastCamPos.y = camPos.y;
+			lastCamPos.z = camPos.z;
 		}
 
 		checkOpenGLError();
-
-		lastCamPos.x = camPos.x;
-		lastCamPos.y = camPos.y;
-		lastCamPos.z = camPos.z;
+		
 		lastTime = ftime;
 
 		glXSwapBuffers(display, window);
 	}
+
+	stopSound();
 
 	freeMesh(galaxy);
 	freeMesh(star);
