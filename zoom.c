@@ -52,7 +52,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 					if (key == XK_Escape) {
 						running = false;
 					}
-					else if (key == XK_space) {
+					else if (key == XK_space && !launched) {
 						launched = true;
 						clock_gettime(CLOCK_MONOTONIC, &start);
 						playMod("./mods/2ND_PM.S3M");
@@ -75,8 +75,8 @@ int main() {
 
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
 
 	initShaders();
 	initNoise();
@@ -100,7 +100,6 @@ int main() {
 
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
-
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
