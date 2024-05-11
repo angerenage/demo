@@ -55,7 +55,9 @@ void handleEvents(Display *display, Atom wmDelete) {
 					else if (key == XK_space && !launched) {
 						launched = true;
 						clock_gettime(CLOCK_MONOTONIC, &start);
-						playMod("./mods/2ND_PM.S3M");
+						#ifndef WSL
+							playMod("./mods/2ND_PM.S3M");
+						#endif
 					}
 				}
 				break;
@@ -64,7 +66,9 @@ void handleEvents(Display *display, Atom wmDelete) {
 }
 
 int main() {
-	initAudio();
+	#ifndef WSL
+		initAudio();
+	#endif
 	initWindow(screenSize);
 	
 
@@ -350,7 +354,9 @@ int main() {
 	cleanupWater();
 	cleanupUtils();
 
-	cleanupAudio();
+	#ifndef WSL
+		cleanupAudio();
+	#endif
 	cleanupWindow();
 
 	return 0;
