@@ -180,6 +180,12 @@ static CurveDef cellScene(vec3 startPos, vec3 startDir) {
 	return (CurveDef){(vec3){0.0, 0.0, 10.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 0.0}};
 }
 
+static const vec3 atomPos = {-1.0, 0.0, 0.0};
+static CurveDef DNAScene(vec3 startPos, vec3 startDir) {
+	vec3 endDir = normalize(vec3_subtract((vec3){0.0, 0.0, 0.0}, atomPos));
+	return (CurveDef){(vec3){0.0, 0.0, 50.0}, (vec3){0.0, 0.0, 25.0}, vec3_add(vec3_scale(endDir, 0.3), atomPos), atomPos};
+}
+
 // Curve computations
 
 static const BezierParams curves[] = {
@@ -193,7 +199,8 @@ static const BezierParams curves[] = {
 	{3.0, waterDive},
 	{4.0, underwaterScene},
 	{3.0, jellyfishZoom},
-	{3.0, cellScene}
+	{3.0, cellScene},
+	{4.0, DNAScene}
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
 

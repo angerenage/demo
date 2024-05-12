@@ -1454,14 +1454,53 @@ static const char dnaVertSrc[] = R"glsl(#version 330 core
 layout (location = 0) in vec3 positionIn;
 layout (location = 3) in vec3 instancePos;
 
+out vec3 fragNormal;
+out vec3 color;
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+const vec3 baseColors[] = vec3[](
+	vec3(0.569, 0.741, 1.0),
+	vec3(0.569, 1.0, 0.569),
+	vec3(1.0, 0.914, 0.569),
+	vec3(1.0, 0.741, 0.569)
+);
+
+int hash(int id) {
+    int hash = id;
+    hash ^= (hash >> 16);
+    hash *= 0x85ebca6b;
+    hash ^= (hash >> 13);
+    hash *= 0xc2b2ae35;
+    hash ^= (hash >> 16);
+    return (hash + id) % 4;
+}
+
 void main() {
-	gl_PointSize = 10.0;
-    vec3 pos = positionIn + instancePos;
-    gl_Position = projection * view * model * vec4(pos, 1.0);
+	int parity = gl_InstanceID % 2;
+
+	int base = hash(gl_InstanceID - parity);
+	base = (base + parity * 2) % 4;
+
+	color = baseColors[base];
+
+	fragNormal = normalize(positionIn);
+	vec3 pos = positionIn * 0.3 + instancePos;
+	gl_Position = projection * view * model * vec4(pos, 1.0);
+}
+)glsl";
+
+static const char dnaFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec3 fragNormal;
+in vec3 color;
+
+void main() {
+	float diff = (dot(vec3(0.0, 1.0, 0.0), fragNormal) + 1) / 2;
+	fragColor = vec4(color * diff, 1.0);
 }
 )glsl";
 
@@ -1542,7 +1581,7 @@ void initShaders() {
 	verticalFFTShader = compileComputeShader(verticalFFTSrc);
 
 	cellShader = compileShader(debugVertSrc, NULL, cellFragSrc);
-	dnaShader = compileShader(dnaVertSrc, NULL, debugFragSrc);
+	dnaShader = compileShader(dnaVertSrc, NULL, dnaFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }

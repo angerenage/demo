@@ -268,7 +268,7 @@ GLuint setupInstanceBuffer(GLuint instanceVAO, const vec3 *positions, int positi
 	glBindVertexArray(instanceVAO);
 	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vec3) * 3, (void*)(sizeof(vec3) * 2));
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
 	glVertexAttribDivisor(3, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
