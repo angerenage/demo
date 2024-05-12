@@ -24,6 +24,8 @@ extern GLuint assembleMapsShader;
 extern GLuint horizontalFFTShader;
 extern GLuint verticalFFTShader;
 
+extern GLuint cellShader;
+
 extern GLuint debugShader;
 
 void initShaders();

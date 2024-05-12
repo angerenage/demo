@@ -144,6 +144,7 @@ void renderJellyfish(mat4 projection, mat4 view, vec3 camPos, float time) {
 
 	glUniform1f(glGetUniformLocation(jellyfishShader, "time"), time);
 	glUniform3fv(glGetUniformLocation(jellyfishShader, "cameraPos"), 1, (GLfloat*)&camPos);
+	glUniform1f(glGetUniformLocation(jellyfishShader, "camDist"), length(camPos) - 3.0);
 
 	for (int i = 0; i < 4; i++) {
 		glBindVertexArray(tentacles[i].VAO);

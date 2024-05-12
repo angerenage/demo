@@ -286,7 +286,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			if (ftime >= getTime(8)) {
+			if (ftime >= getTime(8) && ftime < getTime(10)) {
 				// Underwater scene
 				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -326,6 +326,22 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 				glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
+
+				renderScreenQuad();
+			}
+			if (ftime >= getTime(10)) {
+				mat4 model = getIdentity();
+				scaleMatrix(&model, (vec3){10.0, 10.0, 10.0});
+
+				glUseProgram(cellShader);
+
+				glUniformMatrix4fv(glGetUniformLocation(cellShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
+				glUniformMatrix4fv(glGetUniformLocation(cellShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+				glUniformMatrix4fv(glGetUniformLocation(cellShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
+				float scale = lerp(0.01, 1.0, (ftime - getTime(10)) / 3.0);
+				glUniform1f(glGetUniformLocation(cellShader, "scale"), scale);
+				glUniform1f(glGetUniformLocation(cellShader, "camDist"), length(camPos));
 
 				renderScreenQuad();
 			}

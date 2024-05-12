@@ -118,7 +118,7 @@ static CurveDef galaxyZoom(vec3 startPos, vec3 startDir) {
 
 static const vec3 sunPos = {0.0, -0.5, -2.0};
 static CurveDef hideGalaxy(vec3 startPos, vec3 startDir) {
-	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 1.0), startPos), (vec3){sunPos.x, startPos.y, sunPos.z}, sunPos};
+	return (CurveDef){startPos, vec3_add(startDir, startPos), (vec3){sunPos.x, startPos.y, sunPos.z}, sunPos};
 }
 
 static const vec3 planetPos = {0.0, 0., 50.0};
@@ -148,7 +148,7 @@ static CurveDef planetZoom(vec3 startPos, vec3 startDir) {
 static const vec3 surfacePos = {0.0, 2.0, 0.0};
 static const vec3 sunDir = (vec3){0.0, 0.0, -4.86};
 static CurveDef waterScene(vec3 startPos, vec3 startDir) {
-	vec3 waterSceneStartPos = vec3_add(vec3_scale(normalize(vec3_scale(sunDir, 1)), 50), surfacePos);
+	vec3 waterSceneStartPos = vec3_add(vec3_scale(normalize(sunDir), 50), surfacePos);
 	waterSceneStartPos.y = 100.0;
 
 	return (CurveDef){waterSceneStartPos, vec3_add((vec3){0.0, -25.0, 0.0}, waterSceneStartPos), vec3_add(vec3_scale(sunDir, 5), surfacePos), surfacePos};
@@ -165,7 +165,19 @@ static CurveDef underwaterScene(vec3 startPos, vec3 startDir) {
 	startPos = (vec3){17.0, 20.0, 30.0};
 	vec3 endPos = vec3_scale(normalize((vec3){5.0, 1.0, 9.0}), 10.0);
 
-	return (CurveDef){startPos, vec3_add(vec3_scale((vec3){0.0, -1.0, 0.0}, 1), startPos), vec3_scale(endPos, 3), endPos};
+	return (CurveDef){startPos, vec3_add((vec3){0.0, -1.0, 0.0}, startPos), vec3_scale(endPos, 3), endPos};
+}
+
+static const vec3 jellyfishPos = {0.0, -2.0, 0.0};
+static CurveDef jellyfishZoom(vec3 startPos, vec3 startDir) {
+	vec3 endDir = normalize(vec3_subtract(jellyfishPos, startPos));
+	vec3 endPos = vec3_scale(endDir, -2.0);
+
+	return (CurveDef){startPos, vec3_add(vec3_scale(startDir, 2.0), startPos), vec3_add(vec3_scale(endDir, 0.5), endPos), endPos};
+}
+
+static CurveDef cellScene(vec3 startPos, vec3 startDir) {
+	return (CurveDef){(vec3){0.0, 0.0, 10.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 0.0}};
 }
 
 // Curve computations
@@ -179,7 +191,9 @@ static const BezierParams curves[] = {
 	{1.0, planetZoom},
 	{5.0, waterScene},
 	{3.0, waterDive},
-	{4.0, underwaterScene}
+	{4.0, underwaterScene},
+	{3.0, jellyfishZoom},
+	{3.0, cellScene}
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
 

@@ -1370,6 +1370,7 @@ out vec4 fragColor;
 in vec3 fragPos;
 
 uniform vec3 cameraPos;
+uniform float camDist;
 
 float circle(vec2 UV, vec2 pos) {
 	return max(0.0, mix(1.0, 0.0, abs(length(UV + pos) * 2 - 1) * 2));
@@ -1396,7 +1397,54 @@ void main() {
 	vec3 viewDirection = normalize(fragPos - cameraPos);
 	float fresnel = clamp(0.0, 1.0, dot(viewDirection, normalize(fragPos)) * 2 + 0.5) / 4;
 
-	fragColor = vec4(vec3(0.89, 0.69, 0.7) + ring, baseAlpha + heightMask + fresnel + ringMask);//vec4(vec3(heightMask), 1.0);
+	float alpha = baseAlpha + heightMask + fresnel + ringMask;
+	alpha = mix(1.0, alpha, clamp(0.0, 1.0, camDist));
+
+	vec3 color = vec3(0.89, 0.69, 0.7) + ring;
+	fragColor = vec4(color, alpha);
+}
+)glsl";
+
+// --------------------------- CELL SHADERS ---------------------------
+
+// The Book of Shaders by Patricio Gonzalez Vivo & Jen Lowe (https://thebookofshaders.com/12/)
+static const char cellFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec3 fragPos;
+
+uniform float scale;
+uniform float camDist;
+
+const vec3 jellyfishColor = vec3(0.329, 0.318, 0.384);
+
+vec2 random2( vec2 p ) {
+	return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);
+}
+
+void main() {
+	vec2 st = (fragPos.xy * 3.0) / scale;
+
+	vec2 i_st = floor(st);
+	vec2 f_st = fract(st);
+
+	float m_dist = 1.0;
+	for (int y= -1; y <= 1; y++) {
+		for (int x= -1; x <= 1; x++) {
+			vec2 neighbor = vec2(float(x),float(y));
+			vec2 point = random2(i_st + neighbor);
+
+			vec2 diff = neighbor + point - f_st;
+			float dist = length(diff);
+			m_dist = min(m_dist, dist);
+		}
+	}
+
+	m_dist += pow(1.0 - m_dist, 4) * 0.8;
+	m_dist *= min(camDist, 1.0);
+
+	vec3 color = mix(vec3(0.0), jellyfishColor, clamp(0.0, 1.0, m_dist * m_dist + max(0.0, camDist - 7.0) / 2.0));
+	fragColor = vec4(color, 1.0);
 }
 )glsl";
 
@@ -1407,13 +1455,14 @@ layout(location = 0) in vec3 positionIn;
 
 out vec3 fragPos;
 
+uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 
 void main() {
 	fragPos = positionIn;
 	gl_PointSize = 5.0;
-	gl_Position = projection * view * vec4(positionIn, 1.0);
+	gl_Position = projection * view * model * vec4(positionIn, 1.0);
 }
 )glsl";
 
@@ -1448,6 +1497,8 @@ GLuint assembleMapsShader = 0;
 GLuint horizontalFFTShader = 0;
 GLuint verticalFFTShader = 0;
 
+GLuint cellShader = 0;
+
 GLuint debugShader = 0;
 
 void initShaders() {
@@ -1471,6 +1522,8 @@ void initShaders() {
 	assembleMapsShader = compileComputeShader(assembleMapsCompSrc);
 	horizontalFFTShader = compileComputeShader(horizontalFFTSrc);
 	verticalFFTShader = compileComputeShader(verticalFFTSrc);
+
+	cellShader = compileShader(debugVertSrc, NULL, cellFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
