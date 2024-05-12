@@ -12,6 +12,7 @@
 #include "sphere.h"
 #include "water.h"
 #include "jellyfish.h"
+#include "molecules.h"
 #include "text.h"
 
 vec2 screenSize = {600.0, 800.0};
@@ -102,6 +103,8 @@ int main() {
 
 	Mesh t = createText(L"Appuyez sur Espace pour commencer");
 
+	generateDoubleHelix(10, 1.0, 1.0);
+
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
 	vec3 lastCamPos = initializeCameraPosition();
@@ -119,6 +122,12 @@ int main() {
 		ftime += defaultTime;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		vec3 camPos, camDir;
+		defaultCameraTransforms(&camPos, &camDir, 10, (vec2){-0.75, 0.0});
+		mat4 view = viewMatrix(camPos, (vec3){0, 0, 0}, (vec3){0, 1, 0});
+
+		renderDNA(projection, view);
 
 		// Drawing text
 		if (!launched) {
@@ -366,8 +375,11 @@ int main() {
 	freeMesh(water);
 	freeMesh(particles);
 	freeMesh(t);
-	cleanupJellyfish();
 	cleanupWater();
+	cleanupJellyfish();
+
+	cleanupMolecules();
+
 	cleanupUtils();
 
 	#ifndef WSL

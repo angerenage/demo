@@ -258,6 +258,24 @@ GLuint createVAO(const vec3 *vertices, int vertexCount) {
 	return vao;
 }
 
+GLuint setupInstanceBuffer(GLuint instanceVAO, const vec3 *positions, int positionsCount) {
+	GLuint instanceVBO = 0;
+
+	glGenBuffers(1, &instanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, positionsCount * sizeof(vec3), positions, GL_STATIC_DRAW);
+
+	glBindVertexArray(instanceVAO);
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vec3) * 3, (void*)(sizeof(vec3) * 2));
+	glVertexAttribDivisor(3, 1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	return instanceVBO;
+}
+
 void checkOpenGLError() {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {

@@ -25,6 +25,7 @@ extern GLuint horizontalFFTShader;
 extern GLuint verticalFFTShader;
 
 extern GLuint cellShader;
+extern GLuint dnaShader;
 
 extern GLuint debugShader;
 

@@ -1448,6 +1448,23 @@ void main() {
 }
 )glsl";
 
+// --------------------------- DNA SHADERS ---------------------------
+
+static const char dnaVertSrc[] = R"glsl(#version 330 core
+layout (location = 0) in vec3 positionIn;
+layout (location = 3) in vec3 instancePos;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main() {
+	gl_PointSize = 10.0;
+    vec3 pos = positionIn + instancePos;
+    gl_Position = projection * view * model * vec4(pos, 1.0);
+}
+)glsl";
+
 // --------------------------- DEBUG SHADERS ---------------------------
 
 static const char debugVertSrc[] = R"glsl(#version 330 core
@@ -1472,7 +1489,7 @@ out vec4 fragColor;
 in vec3 fragPos;
 
 void main() {
-	fragColor = vec4(1.0);
+	fragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )glsl";
 
@@ -1498,6 +1515,7 @@ GLuint horizontalFFTShader = 0;
 GLuint verticalFFTShader = 0;
 
 GLuint cellShader = 0;
+GLuint dnaShader = 0;
 
 GLuint debugShader = 0;
 
@@ -1524,6 +1542,7 @@ void initShaders() {
 	verticalFFTShader = compileComputeShader(verticalFFTSrc);
 
 	cellShader = compileShader(debugVertSrc, NULL, cellFragSrc);
+	dnaShader = compileShader(dnaVertSrc, NULL, debugFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
