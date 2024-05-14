@@ -57,7 +57,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 						launched = true;
 						clock_gettime(CLOCK_MONOTONIC, &start);
 						#ifndef WSL
-							playMod("./mods/2ND_PM.S3M.gz");
+							playMod("./mods/music.it.gz");
 						#endif
 					}
 				}
@@ -104,19 +104,6 @@ int main() {
 	Mesh t = createText(L"Appuyez sur Espace pour commencer");
 
 	generateDoubleHelix(100, 1.0, 75.0);
-
-
-	size_t data_size = 0;
-	char *data;
-
-	printf("testing :\n");
-	int test = loadRessource("./mods/test.txt.gz", &data, &data_size);
-	zerr(test);
-	for (int i = 0; i < data_size; i++) {
-		printf("%c", data[i]);
-	}
-	printf("\n");
-	free(data);
 
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
