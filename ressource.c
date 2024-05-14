@@ -43,7 +43,6 @@ int loadRessource(const char *sourceFile, void** data, size_t *data_size) {
 			strm.next_out = out;
 			ret = inflate(&strm, Z_NO_FLUSH);
 			assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
-			zerr(ret);
 			switch (ret) {
 			case Z_NEED_DICT:
 				ret = Z_DATA_ERROR;     /* and fall through */
@@ -65,7 +64,6 @@ int loadRessource(const char *sourceFile, void** data, size_t *data_size) {
 			result = temp_ptr;
 			memcpy(result + result_size, out, have);
 			result_size += have;
-			printf("result size = %lu\n", result_size);
 
 		} while (strm.avail_out == 0);
 
@@ -83,29 +81,25 @@ int loadRessource(const char *sourceFile, void** data, size_t *data_size) {
 }
 
 void zerr(int ret) {
-	if (ret != Z_OK && ret != Z_STREAM_END) {
-		fputs("zpipe: ", stderr);
-		switch (ret) {
-		case Z_ERRNO:
-			if (ferror(stdin))
-				fputs("error reading stdin\n", stderr);
-			if (ferror(stdout))
-				fputs("error writing stdout\n", stderr);
-			break;
-		case Z_STREAM_ERROR:
-			fputs("invalid compression level\n", stderr);
-			break;
-		case Z_DATA_ERROR:
-			fputs("invalid or incomplete deflate data\n", stderr);
-			break;
-		case Z_MEM_ERROR:
-			fputs("out of memory\n", stderr);
-			break;
-		case Z_VERSION_ERROR:
-			fputs("zlib version mismatch!\n", stderr);
-			break;
-		default:
-			fprintf(stderr, "error code = %d\n", ret);
-		}
+	fputs("zpipe: ", stderr);
+	switch (ret) {
+	case Z_ERRNO:
+		if (ferror(stdin))
+			fputs("error reading stdin\n", stderr);
+		if (ferror(stdout))
+			fputs("error writing stdout\n", stderr);
+		break;
+	case Z_STREAM_ERROR:
+		fputs("invalid compression level\n", stderr);
+		break;
+	case Z_DATA_ERROR:
+		fputs("invalid or incomplete deflate data\n", stderr);
+		break;
+	case Z_MEM_ERROR:
+		fputs("out of memory\n", stderr);
+		break;
+	case Z_VERSION_ERROR:
+		fputs("zlib version mismatch!\n", stderr);
+		break;
 	}
 }

@@ -116,7 +116,6 @@ static void* audioThreadRoutine(void *arg) {
 	size_t data_len;
     void *data_buf;
 	int ret = loadRessource(module_path, &data_buf, &data_len);
-	printf("test : %lu\n", data_len);
 	if (ret < 0) {
 		free(data_buf);
 		exit(EXIT_FAILURE);
