@@ -200,7 +200,7 @@ static const BezierParams curves[] = {
 	{4.0, underwaterScene},
 	{3.0, jellyfishZoom},
 	{3.0, cellScene},
-	{4.0, DNAScene}
+	{5.0, DNAScene}
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
 

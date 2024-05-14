@@ -57,7 +57,7 @@ void handleEvents(Display *display, Atom wmDelete) {
 						launched = true;
 						clock_gettime(CLOCK_MONOTONIC, &start);
 						#ifndef WSL
-							playMod("./mods/2ND_PM.S3M");
+							playMod("./mods/2ND_PM.S3M.gz");
 						#endif
 					}
 				}
@@ -105,12 +105,24 @@ int main() {
 
 	generateDoubleHelix(100, 1.0, 75.0);
 
+
+	/*size_t data_size = 0;
+	char *data;
+
+	int test = loadRessource("./mods/mods.txt.gz", &data, &data_size);
+	zerr(test);
+	for (int i = 0; i < data_size; i++) {
+		printf("%c", data[i]);
+	}
+	printf("\n");
+	free(data);*/
+
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(10);
+	float defaultTime = getTime(0);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -336,6 +348,7 @@ int main() {
 				mat4 model = getIdentity();
 				scaleMatrix(&model, (vec3){10.0, 10.0, 10.0});
 
+				// Draw cells
 				glUseProgram(cellShader);
 
 				glUniformMatrix4fv(glGetUniformLocation(cellShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
