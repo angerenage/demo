@@ -13,7 +13,7 @@ The goal of this demo is to participate in both the 64 KB and 64 MB tracks of th
 
 ## Features
 
-Current executable size: 39996 bytes (using UPX)
+Current executable size: 39684 bytes (using UPX)
 
 ### Done
 
