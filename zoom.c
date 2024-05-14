@@ -106,16 +106,17 @@ int main() {
 	generateDoubleHelix(100, 1.0, 75.0);
 
 
-	/*size_t data_size = 0;
+	size_t data_size = 0;
 	char *data;
 
-	int test = loadRessource("./mods/mods.txt.gz", &data, &data_size);
+	printf("testing :\n");
+	int test = loadRessource("./mods/test.txt.gz", &data, &data_size);
 	zerr(test);
 	for (int i = 0; i < data_size; i++) {
 		printf("%c", data[i]);
 	}
 	printf("\n");
-	free(data);*/
+	free(data);
 
 	
 	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);

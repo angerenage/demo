@@ -46,7 +46,7 @@ To build this project, you will need GCC for compiling and OpenGL libraries for 
 1. Install the necessary libraries:
 	```bash
 	sudo apt-get update
-	sudo apt-get install -y libx11-dev libgl1-mesa-dev
+	sudo apt-get install -y libx11-dev libgl1-mesa-dev zlib1g-dev
 	```
 	You will also need libmikmod found at https://sourceforge.net/projects/mikmod/files/libmikmod/3.3.11.1/libmikmod-3.3.11.1.tar.gz/download
 

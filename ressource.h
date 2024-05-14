@@ -9,5 +9,5 @@
 
 #define CHUNK 4096
 
-int loadRessource(const char *sourceFile, void* data, size_t *data_size);
+int loadRessource(const char *sourceFile, void** data, size_t *data_size);
 void zerr(int ret);

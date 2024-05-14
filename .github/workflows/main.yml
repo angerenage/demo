@@ -21,7 +21,7 @@ jobs:
       - name: Install GCC and necessary libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libx11-dev libgl1-mesa-dev libasound2-dev
+          sudo apt-get install -y build-essential libx11-dev libgl1-mesa-dev zlib1g-dev
 
       - name: Install UPX
         run: sudo apt-get install -y upx
