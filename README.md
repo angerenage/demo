@@ -24,11 +24,13 @@ Current executable size: 40736 bytes (using UPX)
 - 'Atmosphere' rendering
 - Underwater rendering
 - Jellyfish rendering
+- Cells, DNA and atoms rendering
+- Music
 
 ### TODO
 
-- Cells, DNA and atoms rendering (if I have time)
-- Music
+- Credit scene
+- Minify shaders
 
 ## Building the Project
 
