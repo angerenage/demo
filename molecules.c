@@ -1,14 +1,22 @@
 #include "molecules.h"
 
+static Mesh adnSphere = {0};
 static Mesh atomSphere = {0};
+
 static GLuint dnaInstancedVBO = 0;
 static int posNumber = 0;
 
-void generateDoubleHelix(int numPoints, float radius, float twist) {
-	if (atomSphere.VAO == 0) {
-		atomSphere = generateIcosphere(3);
-	}
+static GLuint atomInstancedVBO = 0;
+static const int nucleusNumber = sizeof(icosahedron_positions) / sizeof(vec3);
 
+static const vec3 atomPos = {-1.0, 0.0, 0.0};
+
+void initMolecules() {
+	adnSphere = generateIcosphere(3);
+	atomSphere = generateIcosphere(3);
+}
+
+void generateDoubleHelix(int numPoints, float radius, float twist) {
 	vec3 *positions = (vec3*)malloc(numPoints * 2 * sizeof(vec3));
 
 	if (positions) {
@@ -31,26 +39,53 @@ void generateDoubleHelix(int numPoints, float radius, float twist) {
 		}
 		
 		posNumber = numPoints * 2;
-		dnaInstancedVBO = setupInstanceBuffer(atomSphere.VAO, positions, posNumber);
+		dnaInstancedVBO = setupInstanceBuffer(adnSphere.VAO, positions, posNumber);
 		free(positions);
 	}
 }
 
-void renderDNA(mat4 projection, mat4 view) {
-	glUseProgram(dnaShader);
-
+void renderDNA(mat4 projection, mat4 view, vec3 camPos) {
 	mat4 model = getIdentity();
 	translationMatrix(&model, (vec3){0.0, -posNumber / 4.0f, 0.0});
+
+	glEnable(GL_BLEND);
+	glUseProgram(dnaShader);
 
 	glUniformMatrix4fv(glGetUniformLocation(dnaShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 	glUniformMatrix4fv(glGetUniformLocation(dnaShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 	glUniformMatrix4fv(glGetUniformLocation(dnaShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
+	float camDist = length(vec3_subtract(atomPos, camPos)) - 0.3;
+	glUniform1f(glGetUniformLocation(dnaShader, "camDist"), camDist);
+
+	glBindVertexArray(adnSphere.VAO);
+	glDrawElementsInstanced(GL_TRIANGLES, adnSphere.indexCount, GL_UNSIGNED_INT, NULL, posNumber);
+	glBindVertexArray(0);
+
+	glDisable(GL_BLEND);
+}
+
+void generateAtom() {
+	atomInstancedVBO = setupInstanceBuffer(atomSphere.VAO, icosahedron_positions, nucleusNumber);
+}
+
+void renderAtoms(mat4 projection, mat4 view) {
+	mat4 model = getIdentity();
+	translationMatrix(&model, atomPos);
+	scaleMatrix(&model, (vec3){0.002, 0.002, 0.002});
+
+	glUseProgram(atomShader);
+
+	glUniformMatrix4fv(glGetUniformLocation(atomShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
+	glUniformMatrix4fv(glGetUniformLocation(atomShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
+	glUniformMatrix4fv(glGetUniformLocation(atomShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
+
 	glBindVertexArray(atomSphere.VAO);
-	glDrawElementsInstanced(GL_TRIANGLES, atomSphere.indexCount, GL_UNSIGNED_INT, NULL, posNumber);
+	glDrawElementsInstanced(GL_TRIANGLES, atomSphere.indexCount, GL_UNSIGNED_INT, NULL, nucleusNumber);
 	glBindVertexArray(0);
 }
 
 void cleanupMolecules() {
 	glDeleteBuffers(1, &dnaInstancedVBO);
+	glDeleteBuffers(1, &atomInstancedVBO);
 }

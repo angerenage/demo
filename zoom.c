@@ -103,14 +103,16 @@ int main() {
 
 	Mesh t = createText(L"Appuyez sur Espace pour commencer");
 
+	initMolecules();
 	generateDoubleHelix(100, 1.0, 75.0);
+	generateAtom();
 
 	
-	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.01f, 1000.0f);
+	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.001f, 1000.0f);
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(0);
+	float defaultTime = getTime(11);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -156,7 +158,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			if (ftime >= getTime(3) && ftime < getTime(4)) {
+			else if (ftime < getTime(4)) {
 				float sunScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(3)) / 3.0));
 
 				mat4 model = getIdentity();
@@ -195,7 +197,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			if (ftime >= getTime(4) && ftime < getTime(6)) {
+			else if (ftime < getTime(6)) {
 				float planeteScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(4)) / 3.0));
 				vec3 planetPos = {0.0, 0.0, 50.0};
 
@@ -236,7 +238,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			if (ftime >= getTime(6) && ftime < getTime(8)) {
+			else if (ftime < getTime(8)) {
 				// Drawing water
 				updateSpectrum(ftime);
 
@@ -289,7 +291,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			if (ftime >= getTime(8) && ftime < getTime(10)) {
+			else if (ftime < getTime(10)) {
 				// Underwater scene
 				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -332,7 +334,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			if (ftime >= getTime(10) && ftime < getTime(11)) {
+			else if (ftime < getTime(11)) {
 				mat4 model = getIdentity();
 				scaleMatrix(&model, (vec3){10.0, 10.0, 10.0});
 
@@ -349,8 +351,9 @@ int main() {
 
 				renderScreenQuad();
 			}
-			if (ftime >= getTime(11)) {
-				renderDNA(projection, view);
+			else if (ftime < getTime(13)) {
+				renderAtoms(projection, view);
+				renderDNA(projection, view, camPos);
 			}
 
 			lastCamPos.x = camPos.x;

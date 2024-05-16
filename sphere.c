@@ -4,7 +4,7 @@
 #define Z .850650808352039932
 
 // Vertices of a unit icosahedron
-static const vec3 icosahedron_positions[] = {
+const vec3 icosahedron_positions[] = {
 	{-X, 0.0, Z}, {X, 0.0, Z}, {-X, 0.0, -Z}, {X, 0.0, -Z},
 	{0.0, Z, X}, {0.0, Z, -X}, {0.0, -Z, X}, {0.0, -Z, -X},
 	{Z, X, 0.0}, {-Z, X, 0.0}, {Z, -X, 0.0}, {-Z, -X, 0.0} 

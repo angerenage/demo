@@ -10,4 +10,6 @@
 
 #include "glutils.h"
 
+extern const vec3 icosahedron_positions[12];
+
 Mesh generateIcosphere(int subdivisions);

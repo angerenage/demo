@@ -1487,7 +1487,7 @@ void main() {
 	color = baseColors[base];
 
 	fragNormal = normalize(positionIn);
-	vec3 pos = positionIn * 0.3 + instancePos;
+	vec3 pos = positionIn * -0.3 + instancePos;
 	gl_Position = projection * view * model * vec4(pos, 1.0);
 }
 )glsl";
@@ -1498,9 +1498,45 @@ out vec4 fragColor;
 in vec3 fragNormal;
 in vec3 color;
 
+uniform float camDist;
+
 void main() {
-	float diff = (dot(vec3(0.0, 1.0, 0.0), fragNormal) + 1) / 2;
-	fragColor = vec4(color * diff, 1.0);
+	float diff = (dot(vec3(0.0, -1.0, 0.0), fragNormal) + 1) / 2;
+	float alpha = (camDist * camDist) / 5;
+	fragColor = vec4(color * diff, alpha);
+}
+)glsl";
+
+// --------------------------- ATOM SHADERS ---------------------------
+
+static const char atomVertSrc[] = R"glsl(#version 330 core
+layout (location = 0) in vec3 positionIn;
+layout (location = 3) in vec3 instancePos;
+
+out vec3 fragPos;
+out vec3 fragNormal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main() {
+	fragNormal = normalize(positionIn);
+	fragPos = positionIn * -0.55 + instancePos ;
+	gl_Position = projection * view * model * vec4(fragPos, 1.0);
+}
+)glsl";
+
+static const char atomFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec3 fragPos;
+in vec3 fragNormal;
+
+void main() {
+	float occlusion = min(1.0, length(fragPos) * 0.8);
+	float diff = (dot(vec3(0.0, -1.0, 0.0), fragNormal) + 1) / 2;
+	fragColor = vec4(vec3(occlusion * diff), 1.0);
 }
 )glsl";
 
@@ -1555,6 +1591,7 @@ GLuint verticalFFTShader = 0;
 
 GLuint cellShader = 0;
 GLuint dnaShader = 0;
+GLuint atomShader = 0;
 
 GLuint debugShader = 0;
 
@@ -1582,6 +1619,7 @@ void initShaders() {
 
 	cellShader = compileShader(debugVertSrc, NULL, cellFragSrc);
 	dnaShader = compileShader(dnaVertSrc, NULL, dnaFragSrc);
+	atomShader = compileShader(atomVertSrc, NULL, atomFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }
