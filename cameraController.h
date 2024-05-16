@@ -11,7 +11,7 @@ typedef enum scene_s {
 	UNDERWATER_SCENE,
 	CELL_SCENE,
 	MOLECULE_SCENE,
-	CREDIT_SCENE
+	CREDIT_SCENE,
 } Scene;
 
 extern Scene currentScene;

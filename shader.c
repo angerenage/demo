@@ -1443,7 +1443,7 @@ void main() {
 	m_dist += pow(1.0 - m_dist, 4) * 0.8;
 	m_dist *= min(camDist, 1.0);
 
-	vec3 color = mix(vec3(0.0), jellyfishColor, clamp(0.0, 1.0, m_dist * m_dist + max(0.0, camDist - 7.0) / 2.0));
+	vec3 color = mix(m_dist * jellyfishColor, jellyfishColor, clamp(0.0, 1.0, (camDist - 35.0) / 10.0));
 	fragColor = vec4(color, 1.0);
 }
 )glsl";

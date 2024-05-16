@@ -180,7 +180,7 @@ static CurveDef jellyfishZoom(vec3 startPos, vec3 startDir) {
 }
 
 static CurveDef cellScene(vec3 startPos, vec3 startDir) {
-	return (CurveDef){(vec3){0.0, 0.0, 10.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 0.0}};
+	return (CurveDef){(vec3){0.0, 0.0, 50.0}, (vec3){0.0, 0.0, 45.0}, (vec3){0.0, 0.0, 5.0}, (vec3){0.0, 0.0, 0.0}};
 }
 
 static const vec3 atomPos = {-1.0, 0.0, 0.0};
@@ -209,10 +209,10 @@ static const BezierParams curves[] = {
 	{3.0, WATER_SCENE, waterDive},
 	{4.0, UNDERWATER_SCENE, underwaterScene},
 	{3.0, UNDERWATER_SCENE, jellyfishZoom},
-	{3.0, CELL_SCENE, cellScene},
+	{8.0, CELL_SCENE, cellScene},
 	{5.0, MOLECULE_SCENE, DNAScene},
 	{5.0, MOLECULE_SCENE, AtomScene},
-	{0.0, CREDIT_SCENE, NULL}
+	{0.0, CREDIT_SCENE, NULL},
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
 

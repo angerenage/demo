@@ -336,7 +336,7 @@ int main() {
 			}
 			else if (currentScene == CELL_SCENE) {
 				mat4 model = getIdentity();
-				scaleMatrix(&model, (vec3){10.0, 10.0, 10.0});
+				scaleMatrix(&model, (vec3){50.0, 50.0, 50.0});
 
 				// Draw cells
 				glUseProgram(cellShader);
@@ -345,7 +345,7 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(cellShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(cellShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				float scale = lerp(0.01, 1.0, (ftime - getTime(10)) / 3.0);
+				float scale = lerp(0.01, 1.0, (ftime - getTime(10) - 1.0) / 5.0);
 				glUniform1f(glGetUniformLocation(cellShader, "scale"), scale);
 				glUniform1f(glGetUniformLocation(cellShader, "camDist"), length(camPos));
 
