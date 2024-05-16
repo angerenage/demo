@@ -70,6 +70,8 @@ vec3 bezierDerivativeUniform(float s, vec3 p0, vec3 p1, vec3 p2, vec3 p3) {
 }
 
 
+Scene currentScene;
+
 typedef struct s_curveDef {
 	vec3 P1, P2, P3, P4;
 } CurveDef;
@@ -78,6 +80,7 @@ typedef CurveDef (*CurveDefFun)(vec3, vec3);
 
 typedef struct s_bezierParams {
 	float length;
+	Scene scene;
 	CurveDefFun def;
 } BezierParams;
 
@@ -196,20 +199,20 @@ static CurveDef AtomScene(vec3 startPos, vec3 startDir) {
 // Curve computations
 
 static const BezierParams curves[] = {
-	{3.0, straightGalaxy},
-	{4.0, galaxyZoom},
-	{5.0, hideGalaxy},
-	{6.0, sunScene},
-	{5.0, sunToPlanet},
-	{1.0, planetZoom},
-	{5.0, waterScene},
-	{3.0, waterDive},
-	{4.0, underwaterScene},
-	{3.0, jellyfishZoom},
-	{3.0, cellScene},
-	{5.0, DNAScene},
-	{5.0, AtomScene},
-	{0.0, NULL}
+	{3.0, GALAXY_SCENE, straightGalaxy},
+	{4.0, GALAXY_SCENE, galaxyZoom},
+	{5.0, GALAXY_SCENE, hideGalaxy},
+	{6.0, SUN_SCENE, sunScene},
+	{5.0, PLANET_SCENE, sunToPlanet},
+	{1.0, PLANET_SCENE, planetZoom},
+	{5.0, WATER_SCENE, waterScene},
+	{3.0, WATER_SCENE, waterDive},
+	{4.0, UNDERWATER_SCENE, underwaterScene},
+	{3.0, UNDERWATER_SCENE, jellyfishZoom},
+	{3.0, CELL_SCENE, cellScene},
+	{5.0, MOLECULE_SCENE, DNAScene},
+	{5.0, MOLECULE_SCENE, AtomScene},
+	{0.0, CREDIT_SCENE, NULL}
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
 
@@ -232,6 +235,8 @@ mat4 getCameraMatrix(vec3 *camPos, float time) {
 		curve = curves[curveIndex];
 		if (curve.def != NULL) c = curve.def(currentStartPos, currentStartDir);
 	}
+	
+	currentScene = curve.scene;
 
 	vec3 pos = currentStartPos, dir = currentStartDir;
 	if (curve.def != NULL) {

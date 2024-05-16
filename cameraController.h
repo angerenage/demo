@@ -3,7 +3,18 @@
 #include <stdio.h>
 #include "geometry.h"
 
-//extern float cameraAngleX, cameraAngleY;
+typedef enum scene_s {
+	GALAXY_SCENE,
+	SUN_SCENE,
+	PLANET_SCENE,
+	WATER_SCENE,
+	UNDERWATER_SCENE,
+	CELL_SCENE,
+	MOLECULE_SCENE,
+	CREDIT_SCENE
+} Scene;
+
+extern Scene currentScene;
 
 vec3 bezier(float t, vec3 p0, vec3 p1, vec3 p2, vec3 p3);
 vec3 bezierDerivative(float t, vec3 p0, vec3 p1, vec3 p2, vec3 p3);

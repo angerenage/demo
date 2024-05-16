@@ -112,7 +112,7 @@ int main() {
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(11);
+	float defaultTime = getTime(8);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -139,7 +139,7 @@ int main() {
 			vec3 camPos;
 			mat4 view = getCameraMatrix(&camPos, ftime);
 
-			if (ftime < getTime(3)) {
+			if (currentScene == GALAXY_SCENE) {
 				// Drawing galaxy
 				glEnable(GL_BLEND);
 
@@ -158,7 +158,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			else if (ftime < getTime(4)) {
+			else if (currentScene == SUN_SCENE) {
 				float sunScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(3)) / 3.0));
 
 				mat4 model = getIdentity();
@@ -197,7 +197,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			else if (ftime < getTime(6)) {
+			else if (currentScene == PLANET_SCENE) {
 				float planeteScale = fmin(1.0, lerp(0.0, 1.0, (ftime - getTime(4)) / 3.0));
 				vec3 planetPos = {0.0, 0.0, 50.0};
 
@@ -238,7 +238,7 @@ int main() {
 
 				glDisable(GL_BLEND);
 			}
-			else if (ftime < getTime(8)) {
+			else if (currentScene == WATER_SCENE) {
 				// Drawing water
 				updateSpectrum(ftime);
 
@@ -291,7 +291,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			else if (ftime < getTime(10)) {
+			else if (currentScene == UNDERWATER_SCENE) {
 				// Underwater scene
 				glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -334,7 +334,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			else if (ftime < getTime(11)) {
+			else if (currentScene == CELL_SCENE) {
 				mat4 model = getIdentity();
 				scaleMatrix(&model, (vec3){10.0, 10.0, 10.0});
 
@@ -351,7 +351,7 @@ int main() {
 
 				renderScreenQuad();
 			}
-			else if (ftime < getTime(13)) {
+			else if (currentScene == MOLECULE_SCENE) {
 				renderAtoms(projection, view);
 				renderDNA(projection, view, camPos);
 			}
