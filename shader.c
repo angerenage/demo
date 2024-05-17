@@ -1461,6 +1461,8 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform float scale;
+
 const vec3 baseColors[] = vec3[](
 	vec3(0.569, 0.741, 1.0),
 	vec3(0.569, 1.0, 0.569),
@@ -1488,7 +1490,7 @@ void main() {
 
 	fragNormal = normalize(positionIn);
 	vec3 pos = positionIn * -0.3 + instancePos;
-	gl_Position = projection * view * model * vec4(pos, 1.0);
+	gl_Position = projection * view * vec4(vec3(model * vec4(pos, 1.0)) * scale, 1.0);
 }
 )glsl";
 
@@ -1499,11 +1501,13 @@ in vec3 fragNormal;
 in vec3 color;
 
 uniform float camDist;
+uniform float scale;
 
 void main() {
+	float mask = mix(0.0, 1.0, (scale - 0.3) * 2);
 	float diff = (dot(vec3(0.0, -1.0, 0.0), fragNormal) + 1) / 2;
 	float alpha = (camDist * camDist) / 5;
-	fragColor = vec4(color * diff, alpha);
+	fragColor = vec4(color * mask * diff, alpha);
 }
 )glsl";
 

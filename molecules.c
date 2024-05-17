@@ -44,7 +44,7 @@ void generateDoubleHelix(int numPoints, float radius, float twist) {
 	}
 }
 
-void renderDNA(mat4 projection, mat4 view, vec3 camPos) {
+void renderDNA(mat4 projection, mat4 view, vec3 camPos, float time) {
 	mat4 model = getIdentity();
 	translationMatrix(&model, (vec3){0.0, -posNumber / 4.0f, 0.0});
 
@@ -57,6 +57,8 @@ void renderDNA(mat4 projection, mat4 view, vec3 camPos) {
 
 	float camDist = length(vec3_subtract(atomPos, camPos)) - 0.3;
 	glUniform1f(glGetUniformLocation(dnaShader, "camDist"), camDist);
+	float scale = lerp(0.3, 1.0, fmin(1.0, time / 3));
+	glUniform1f(glGetUniformLocation(dnaShader, "scale"), scale);
 
 	glBindVertexArray(adnSphere.VAO);
 	glDrawElementsInstanced(GL_TRIANGLES, adnSphere.indexCount, GL_UNSIGNED_INT, NULL, posNumber);

@@ -104,7 +104,7 @@ int main() {
 	Mesh t = createText(L"Appuyez sur Espace pour commencer");
 
 	initMolecules();
-	generateDoubleHelix(100, 1.0, 75.0);
+	generateDoubleHelix(130, 1.0, 82.0);
 	generateAtom();
 
 	
@@ -112,7 +112,7 @@ int main() {
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(8);
+	float defaultTime = getTime(10);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -353,7 +353,7 @@ int main() {
 			}
 			else if (currentScene == MOLECULE_SCENE) {
 				renderAtoms(projection, view);
-				renderDNA(projection, view, camPos);
+				renderDNA(projection, view, camPos, ftime - getTime(11));
 			}
 
 			lastCamPos.x = camPos.x;
@@ -378,7 +378,6 @@ int main() {
 	freeMesh(t);
 	cleanupWater();
 	cleanupJellyfish();
-
 	cleanupMolecules();
 
 	cleanupUtils();
