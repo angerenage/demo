@@ -199,19 +199,19 @@ static CurveDef AtomScene(vec3 startPos, vec3 startDir) {
 // Curve computations
 
 static const BezierParams curves[] = {
-	{3.0, GALAXY_SCENE, straightGalaxy},
-	{4.0, GALAXY_SCENE, galaxyZoom},
+	{4.0, GALAXY_SCENE, straightGalaxy},
+	{5.0, GALAXY_SCENE, galaxyZoom},
 	{5.0, GALAXY_SCENE, hideGalaxy},
 	{6.0, SUN_SCENE, sunScene},
 	{5.0, PLANET_SCENE, sunToPlanet},
 	{1.0, PLANET_SCENE, planetZoom},
 	{5.0, WATER_SCENE, waterScene},
-	{3.0, WATER_SCENE, waterDive},
+	{4.0, WATER_SCENE, waterDive},
 	{4.0, UNDERWATER_SCENE, underwaterScene},
 	{3.0, UNDERWATER_SCENE, jellyfishZoom},
-	{8.0, CELL_SCENE, cellScene},
+	{7.0, CELL_SCENE, cellScene},
 	{5.0, MOLECULE_SCENE, DNAScene},
-	{5.0, MOLECULE_SCENE, AtomScene},
+	{7.0, MOLECULE_SCENE, AtomScene},
 	{0.0, CREDIT_SCENE, NULL},
 };
 static const int steps = sizeof(curves) / sizeof(BezierParams);
