@@ -1471,13 +1471,13 @@ const vec3 baseColors[] = vec3[](
 );
 
 int hash(int id) {
-    int hash = id;
-    hash ^= (hash >> 16);
-    hash *= 0x85ebca6b;
-    hash ^= (hash >> 13);
-    hash *= 0xc2b2ae35;
-    hash ^= (hash >> 16);
-    return (hash + id) % 4;
+	int hash = id;
+	hash ^= (hash >> 16);
+	hash *= 0x85ebca6b;
+	hash ^= (hash >> 13);
+	hash *= 0xc2b2ae35;
+	hash ^= (hash >> 16);
+	return (hash + id) % 4;
 }
 
 void main() {
@@ -1519,14 +1519,32 @@ layout (location = 3) in vec3 instancePos;
 
 out vec3 fragPos;
 out vec3 fragNormal;
+out vec3 color;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+int hash(int id) {
+	int hash = id;
+	hash ^= (hash >> 16);
+	hash *= 0x85ebca6b;
+	hash ^= (hash >> 13);
+	hash *= 0xc2b2ae35;
+	hash ^= (hash >> 16);
+	return (hash + id) % 2;
+}
+
 void main() {
+	if (hash(gl_InstanceID) == 0) {
+		color = normalize(vec3(1.0, 0.2, 0.1));
+	}
+	else {
+		color = normalize(vec3(0.1, 0.2, 1.0));
+	}
+
 	fragNormal = normalize(positionIn);
-	fragPos = positionIn * -0.55 + instancePos ;
+	fragPos = positionIn * -0.55 + instancePos;
 	gl_Position = projection * view * model * vec4(fragPos, 1.0);
 }
 )glsl";
@@ -1536,11 +1554,57 @@ out vec4 fragColor;
 
 in vec3 fragPos;
 in vec3 fragNormal;
+in vec3 color;
 
 void main() {
 	float occlusion = min(1.0, length(fragPos) * 0.8);
 	float diff = (dot(vec3(0.0, -1.0, 0.0), fragNormal) + 1) / 2;
-	fragColor = vec4(vec3(occlusion * diff), 1.0);
+	fragColor = vec4(vec3(color * occlusion * diff), 1.0);
+}
+)glsl";
+
+static const char electronVertSrc[] = R"glsl(#version 330 core
+layout (location = 0) in vec3 positionIn;
+layout (location = 3) in vec3 instancePos;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+uniform float time;
+
+out vec3 fragNormal;
+
+vec3 hashToAxis(vec3 position) {
+    float hash = fract(sin(dot(position, vec3(12.9898, 78.233, 54.53))) * 43758.5453);
+    vec3 jittered = position + hash;
+    jittered = normalize(jittered);
+    return jittered;
+}
+
+void main() {
+	fragNormal = normalize(positionIn);
+
+	vec3 correctedPos = normalize(instancePos + hashToAxis(instancePos)) * 30.0;
+
+    vec3 axis = cross(normalize(instancePos - hashToAxis(instancePos)), normalize(correctedPos));
+    float angle = time;// * 3.14159 / 3.0;
+    vec3 rotatedPosition = cos(angle) * correctedPos +
+                           sin(angle) * cross(axis, correctedPos) +
+                           (1.0 - cos(angle)) * dot(axis, correctedPos) * axis;
+
+    gl_Position = projection * view * model * vec4(rotatedPosition - positionIn * 0.1, 1.0);
+}
+)glsl";
+
+static const char electronFragSrc[] = R"glsl(#version 330 core
+out vec4 fragColor;
+
+in vec3 fragNormal;
+
+void main() {
+	float diff = (dot(vec3(0.0, -1.0, 0.0), fragNormal) + 1) / 2;
+	fragColor = vec4(0.0, diff, 0.0, 1.0);
 }
 )glsl";
 
@@ -1596,6 +1660,7 @@ GLuint verticalFFTShader = 0;
 GLuint cellShader = 0;
 GLuint dnaShader = 0;
 GLuint atomShader = 0;
+GLuint electronShader = 0;
 
 GLuint debugShader = 0;
 
@@ -1624,6 +1689,7 @@ void initShaders() {
 	cellShader = compileShader(debugVertSrc, NULL, cellFragSrc);
 	dnaShader = compileShader(dnaVertSrc, NULL, dnaFragSrc);
 	atomShader = compileShader(atomVertSrc, NULL, atomFragSrc);
+	electronShader = compileShader(electronVertSrc, NULL, electronFragSrc);
 
 	debugShader = compileShader(debugVertSrc, NULL, debugFragSrc);
 }

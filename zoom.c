@@ -112,7 +112,7 @@ int main() {
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(10);
+	float defaultTime = getTime(0);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -352,7 +352,7 @@ int main() {
 				renderScreenQuad();
 			}
 			else if (currentScene == MOLECULE_SCENE) {
-				renderAtoms(projection, view);
+				renderAtoms(projection, view, ftime);
 				renderDNA(projection, view, camPos, ftime - getTime(11));
 			}
 
