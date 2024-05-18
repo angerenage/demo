@@ -199,7 +199,7 @@ void initWater(vec2 screenSize) {
 	glBindImageTexture(1, displacementTextures, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
 
 	slopeTextures = createTextureArrayRG(frequencySize, frequencySize, 4);
-	glBindImageTexture(2, slopeTextures, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RG16F);
+	glBindImageTexture(2, slopeTextures, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RG16F);
 
 	updateSpectrum(0.0f);
 
