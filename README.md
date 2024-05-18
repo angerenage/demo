@@ -67,6 +67,9 @@ This project is licensed under the MIT License - see the [LICENSE](/LICENSE) fil
 
 ## Acknowledgements
 - University of Paris 8 for organizing the demo competition.
-- Stackoverflow for help on many topics.
+- Stackoverflow and Stackexchange for help on many topics.
 - [GarrettGunnell](https://github.com/GarrettGunnell/Water) and [gasgiant](https://github.com/gasgiant/FFT-Ocean) for the FFT water implementation.
+- [Ronja's tutorials](https://www.ronja-tutorials.com/post/010-triplanar-mapping/), [Book of Shaders by Patricio Gonzalez Vivo & Jen Lowe](https://thebookofshaders.com/12/) and [patriciogonzalezvivo](https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83) for different shader algorithms
 - ChatGPT for X11 setup and and various programming tasks.
+
+- elmusho for the music "And I will ever be" used available on [The Mod Archive](https://modarchive.org/index.php?request=view_by_moduleid&query=169575)

@@ -1335,7 +1335,7 @@ void main() {
 
 // --------------------------- JELLYFISH SHADERS ---------------------------
 
-//https://math.stackexchange.com/questions/2341764/asymmetric-periods-in-a-sine-curve
+// https://math.stackexchange.com/questions/2341764/asymmetric-periods-in-a-sine-curve
 static const char jellyfishVertSrc[] = R"glsl(#version 330 core
 layout(location = 0) in vec3 positionIn;
 
