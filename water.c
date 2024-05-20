@@ -131,21 +131,21 @@ void initWater(vec2 screenSize) {
 	glViewport(0, 0, frequencySize, frequencySize);
 	glUseProgram(initialSpectrumShader);
 
-	glUniform1ui(glGetUniformLocation(initialSpectrumShader, "_Seed"), 0);
+	glUniform1ui(glGetUniformLocation(initialSpectrumShader, "seed"), 0);
 	glUniform1ui(glGetUniformLocation(initialSpectrumShader, "_N"), frequencySize);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_LengthScale0"), 94.0f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_LengthScale1"), 128.0f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_LengthScale2"), 64.0f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_LengthScale3"), 32.0f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_LowCutoff"), 0.0001f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_HighCutoff"), 9000.0f);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_Gravity"), gravity);
-	glUniform1f(glGetUniformLocation(initialSpectrumShader, "_Depth"), 20.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "lengthScale0"), 94.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "lengthScale1"), 128.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "lengthScale2"), 64.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "lengthScale3"), 32.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "lowCutoff"), 0.0001f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "highCutoff"), 9000.0f);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "gravity"), gravity);
+	glUniform1f(glGetUniformLocation(initialSpectrumShader, "depth"), 20.0f);
 
 	for (int i = 0; i < 8; i++) {
 		char buffer[14];
 		char buffer2[50];
-		sprintf(buffer, "_Spectrums[%d]", i);
+		sprintf(buffer, "spectrums[%d]", i);
 		strcpy(buffer2, buffer);
 
 		float jonswapAlpha = 0.076f * pow(gravity * params[i].fetch / params[i].windSpeed / params[i].windSpeed, -0.22f);
@@ -212,13 +212,13 @@ void updateSpectrum(float time) {
 	glUseProgram(spectrumUpdateShader);
 
 	glUniform1ui(glGetUniformLocation(spectrumUpdateShader, "_N"), frequencySize);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_LengthScale0"), 94.0f);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_LengthScale1"), 128.0f);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_LengthScale2"), 64.0f);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_LengthScale3"), 32.0f);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_RepeatTime"), 200.0f);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_FrameTime"), time);
-	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "_Gravity"), gravity);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "lengthScale0"), 94.0f);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "lengthScale1"), 128.0f);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "lengthScale2"), 64.0f);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "lengthScale3"), 32.0f);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "repeatTime"), 200.0f);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "frameTime"), time);
+	glUniform1f(glGetUniformLocation(spectrumUpdateShader, "gravity"), gravity);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, initialSpectrumTex);

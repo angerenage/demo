@@ -254,12 +254,12 @@ int main() {
 
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, displacementTextures);
-				glUniform1i(glGetUniformLocation(waterShader, "_DisplacementTextures"), 0);
+				glUniform1i(glGetUniformLocation(waterShader, "displacementTextures"), 0);
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, slopeTextures);
-				glUniform1i(glGetUniformLocation(waterShader, "_SlopeTextures"), 1);
+				glUniform1i(glGetUniformLocation(waterShader, "slopeTextures"), 1);
 
-				glUniform3fv(glGetUniformLocation(waterShader, "_WorldSpaceCameraPos"), 1, (GLfloat*)&camPos);
+				glUniform3fv(glGetUniformLocation(waterShader, "camPos"), 1, (GLfloat*)&camPos);
 
 				glBindVertexArray(water.VAO);
 
@@ -287,7 +287,7 @@ int main() {
 
 				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(atmospherePostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform3fv(glGetUniformLocation(atmospherePostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
+				glUniform3fv(glGetUniformLocation(atmospherePostProcessShader, "camPos"), 1, (GLfloat*)&camPos);
 
 				renderScreenQuad();
 			}
@@ -330,7 +330,7 @@ int main() {
 
 				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(underwaterPostProcessShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
-				glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "cameraPos"), 1, (GLfloat*)&camPos);
+				glUniform3fv(glGetUniformLocation(underwaterPostProcessShader, "camPos"), 1, (GLfloat*)&camPos);
 
 				renderScreenQuad();
 			}

@@ -29,8 +29,6 @@ extern GLuint dnaShader;
 extern GLuint atomShader;
 extern GLuint electronShader;
 
-extern GLuint debugShader;
-
 void initShaders();
 
 GLuint compileShader(const char *vShaderCode, const char *gShaderCode, const char *fShaderCode);
