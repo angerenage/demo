@@ -34,22 +34,33 @@ jobs:
 
       - name: Check executable size and update README
         run: |
-          size=$(stat -c %s zoom)
-          echo "Executable size: $size bytes"
-          if [ $size -gt 65536 ]; then
+          set -e
+          exe_size=$(stat -c %s zoom)
+          music_size=$(stat -c %s mods/music.it.gz)
+          total_size=$((exe_size + music_size))
+          echo "Executable size: $exe_size bytes"
+          echo "Music file size: $music_size bytes"
+          echo "Total size: $total_size bytes"
+          if [ $exe_size -gt 65536 ]; then
             echo "The executable size is greater than 64KB"
             echo "Compressing with UPX..."
             upx --best zoom
-            size=$(stat -c %s zoom)
-            echo "New executable size: $size bytes"
-            if [ $size -gt 65536 ]; then
+            exe_size=$(stat -c %s zoom)
+            total_size=$((exe_size + music_size))
+            echo "New executable size: $exe_size bytes"
+            echo "New total size: $total_size bytes"
+            if [ $exe_size -gt 65536 ]; then
               echo "Error: The executable size is still greater than 64KB after compression."
               exit 1
             else
-              sed -i "s/Current executable size: .*/Current executable size: $size bytes (using UPX)/" README.md
+              sed -i "s/Current executable size: .*/Current executable size: $exe_size bytes (using UPX)/" README.md
+              sed -i "s/Current music file size: .*/Current music file size: $music_size bytes/" README.md
+              sed -i "s/Current total size: .*/Current total size: $total_size bytes/" README.md
             fi
           else
-            sed -i "s/Current executable size: .*\s*(using UPX)*/Current executable size: $size bytes/" README.md
+            sed -i "s/Current executable size: .*\s*(using UPX)*/Current executable size: $exe_size bytes/" README.md
+            sed -i "s/Current music file size: .*/Current music file size: $music_size bytes/" README.md
+            sed -i "s/Current total size: .*/Current total size: $total_size bytes/" README.md
           fi
 
       - name: Commit and push if changed
