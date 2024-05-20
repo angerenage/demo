@@ -110,7 +110,7 @@ Mesh createParticles(int pointCount, float radius) {
 void initWater(vec2 screenSize) {
 	updatePostProcessTextures(screenSize);
 
-	//computing initial spectrum
+	// computing initial spectrum
 	initialSpectrumTex = createTextureArray(frequencySize, frequencySize, 4);
 
 	GLuint initialSpectrumFBO;

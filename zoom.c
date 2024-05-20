@@ -352,6 +352,7 @@ int main() {
 				renderScreenQuad();
 			}
 			else if (currentScene == MOLECULE_SCENE) {
+				// Draw DNA molecule and atom
 				renderAtoms(projection, view, ftime);
 				renderDNA(projection, view, camPos, ftime - getTime(11));
 			}

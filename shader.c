@@ -64,7 +64,7 @@ GLuint compileComputeShader(const char *shaderCode) {
 	int success;
 	char infoLog[512];
 
-	// vertex shader
+	// compute shader
 	compute = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(compute, 1, &shaderCode, NULL);
 	glCompileShader(compute);
