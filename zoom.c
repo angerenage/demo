@@ -112,7 +112,7 @@ int main() {
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(0);
+	float defaultTime = getTime(6);
 	float lastTime = defaultTime;
 
 	while (running) {
@@ -171,7 +171,7 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(starShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(starShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 6);
+				glUniform1i(glGetUniformLocation(starShader, "subdivisions"), 5);
 				glUniform1f(glGetUniformLocation(starShader, "radius"), 2.0);
 
 				glActiveTexture(GL_TEXTURE0);
@@ -210,7 +210,7 @@ int main() {
 				glUniformMatrix4fv(glGetUniformLocation(planetShader, "projection"), 1, GL_FALSE, (GLfloat*)&projection);
 				glUniformMatrix4fv(glGetUniformLocation(planetShader, "view"), 1, GL_FALSE, (GLfloat*)&view);
 
-				glUniform1i(glGetUniformLocation(planetShader, "subdivisions"), 6);
+				glUniform1i(glGetUniformLocation(planetShader, "subdivisions"), 5);
 				glUniform1f(glGetUniformLocation(planetShader, "radius"), 1.0);
 
 				glActiveTexture(GL_TEXTURE0);
