@@ -53,8 +53,8 @@ jobs:
               echo "Error: The executable size is still greater than 64KB after compression."
               exit 1
             else
-              sed -i "s/Current executable size: .*/Current executable size: $exe_size bytes (using UPX)/" README.md
-              sed -i "s/Current music file size: .*/Current music file size: $music_size bytes/" README.md
+              sed -i "s/Current executable size: .*/Current executable size: $exe_size bytes (using UPX)/\\" README.md
+              sed -i "s/Current music file size: .*/Current music file size: $music_size bytes/\\" README.md
               sed -i "s/Current total size: .*/Current total size: $total_size bytes/" README.md
             fi
           else
