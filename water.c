@@ -239,11 +239,11 @@ void updateSpectrum(float time) {
 	// Map assembly
 	glUseProgram(assembleMapsShader);
 
-	glUniform2f(glGetUniformLocation(assembleMapsShader, "_Lambda"), 1.0, 1.0);
-	glUniform1f(glGetUniformLocation(assembleMapsShader, "_FoamDecayRate"), 0.0175);
-	glUniform1f(glGetUniformLocation(assembleMapsShader, "_FoamBias"), 0.85);
-	glUniform1f(glGetUniformLocation(assembleMapsShader, "_FoamThreshold"), 0.0);
-	glUniform1f(glGetUniformLocation(assembleMapsShader, "_FoamAdd"), 0.1);
+	glUniform2f(glGetUniformLocation(assembleMapsShader, "lambda"), 1.0, 1.0);
+	glUniform1f(glGetUniformLocation(assembleMapsShader, "foamDecayRate"), 0.0175);
+	glUniform1f(glGetUniformLocation(assembleMapsShader, "foamBias"), 0.85);
+	glUniform1f(glGetUniformLocation(assembleMapsShader, "foamThreshold"), 0.0);
+	glUniform1f(glGetUniformLocation(assembleMapsShader, "foamAdd"), 0.1);
 
 	glDispatchCompute(frequencySize / 8, frequencySize / 8, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);

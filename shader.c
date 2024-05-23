@@ -666,48 +666,46 @@ static const char waterFragSrc[] = "#version 330 core\n"
 static const char assembleMapsCompSrc[] = R"glsl(#version 430 core
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(rgba16f, binding = 0) uniform image2DArray _SpectrumTextures;
-layout(rgba16f, binding = 1) uniform image2DArray displacementTextures;
-layout(rg16f, binding = 2) uniform image2DArray slopeTextures;
+layout(binding = 0, rgba16f) uniform readonly image2DArray spectrumTextures;
+layout(binding = 1, rgba16f) uniform image2DArray displacementTextures;
+layout(binding = 2, rg16f) uniform writeonly image2DArray slopeTextures;
 
-uniform vec2 _Lambda;
-uniform float _FoamDecayRate;
-uniform float _FoamBias;
-uniform float _FoamThreshold;
-uniform float _FoamAdd;
+uniform vec2 lambda;
+uniform float foamDecayRate, foamBias, foamThreshold, foamAdd;
 
 vec4 Permute(vec4 data, vec3 id) {
-	return data * (1. - 2. * mod(id.x + id.y, 2.));
+	return data * (1.0 - 2.0 * mod(id.x + id.y, 2.0));
 }
 
 void main() {
+	uvec3 id = gl_GlobalInvocationID;
+
 	for (int i = 0; i < 4; i++) {
-		vec4 htildeDisplacement = Permute(imageLoad(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy, i * 2)), gl_GlobalInvocationID);
-		vec4 htildeSlope = Permute(imageLoad(_SpectrumTextures, ivec3(gl_GlobalInvocationID.xy, i * 2 + 1)), gl_GlobalInvocationID);
-
-		vec2 dxdz = htildeDisplacement.rg;
-		vec2 dydxz = htildeDisplacement.ba;
-		vec2 dyxdyz = htildeSlope.rg;
-		vec2 dxxdzz = htildeSlope.ba;
+		vec4 htildeDisplacement = Permute(imageLoad(spectrumTextures, ivec3(id.xy, i * 2)), vec3(id));
+		vec4 htildeSlope = Permute(imageLoad(spectrumTextures, ivec3(id.xy, (i * 2) + 1)), vec3(id));
 		
-		float jacobian = (1. + _Lambda.x * dxxdzz.x) * (1. + _Lambda.y * dxxdzz.y) - _Lambda.x * _Lambda.y * dydxz.y * dydxz.y;
-
-		vec3 displacement = vec3(_Lambda.x * dxdz.x, dydxz.x, _Lambda.y * dxdz.y);
-
-		vec2 slopes = dyxdyz / (1. + abs(dxxdzz * _Lambda));
-
-		float foam = imageLoad(displacementTextures, ivec3(gl_GlobalInvocationID.xy, i)).a;
-		foam *= exp(-_FoamDecayRate);
-		foam = clamp(foam, 0., 1.);
-
-		float biasedJacobian = max(0., -(jacobian - _FoamBias));
-
-		if (biasedJacobian > _FoamThreshold)
-			foam += _FoamAdd * biasedJacobian;
-
-
-		imageStore(displacementTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(displacement, foam / 5.));
-		imageStore(slopeTextures, ivec3(gl_GlobalInvocationID.xy, i), vec4(slopes, 0., 0.));
+		vec2 dxdz = htildeDisplacement.xy;
+		vec2 dydxz = htildeDisplacement.zw;
+		vec2 dyxdyz = htildeSlope.xy;
+		vec2 dxxdzz = htildeSlope.zw;
+		
+		float jacobian = ((1.0 + (lambda.x * dxxdzz.x)) * (1.0 + (lambda.y * dxxdzz.y))) - (((lambda.x * lambda.y) * dydxz.y) * dydxz.y);
+		vec3 displacement = vec3(lambda.x * dxdz.x, dydxz.x, lambda.y * dxdz.y);
+		
+		vec2 slopes = dyxdyz / (vec2(1.0) + abs(dxxdzz * lambda));
+		float covariance = slopes.x * slopes.y;
+		
+		float foam = imageLoad(displacementTextures, ivec3(id.xy, i)).w;
+		foam *= exp(-foamDecayRate);
+		foam = clamp(foam, 0.0, 1.0);
+		
+		float biasedJacobian = max(0.0, -(jacobian - foamBias));
+		
+		if (biasedJacobian > foamThreshold)
+			foam += foamAdd * biasedJacobian;
+		
+		imageStore(displacementTextures, ivec3(id.xy, i), vec4(displacement, foam / 5.0));
+		imageStore(slopeTextures, ivec3(id.xy, i), vec4(slopes.xy, 0.0, 0.0));
 	}
 }
 )glsl";
@@ -719,7 +717,7 @@ static const char horizontalFFTSrc[] = R"glsl(#version 430 core
 #define LOG_SIZE 10
 
 layout(local_size_x = SIZE, local_size_y = 1, local_size_z = 1) in;
-layout(rgba16f, binding = 0) uniform image2DArray _FourierTarget;
+layout(binding = 0, rgba16f) uniform image2DArray _FourierTarget;
 
 shared vec4 fftGroupBuffer[2][SIZE];
 
@@ -775,7 +773,7 @@ static const char verticalFFTSrc[] = R"glsl(#version 430 core
 #define LOG_SIZE 10
 
 layout(local_size_x = SIZE, local_size_y = 1, local_size_z = 1) in;
-layout(rgba16f, binding = 0) uniform image2DArray _FourierTarget;
+layout(binding = 0, rgba16f) uniform image2DArray _FourierTarget;
 
 shared vec4 fftGroupBuffer[2][SIZE];
 
