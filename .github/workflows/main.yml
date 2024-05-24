@@ -22,6 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libx11-dev libgl1-mesa-dev zlib1g-dev
+          sudo apt install libmikmod-dev
 
       - name: Install UPX
         run: sudo apt-get install -y upx
@@ -29,8 +30,7 @@ jobs:
       - name: Compile the program
         run: |
           set -e
-          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/.github/workflows/lib:$LD_LIBRARY_PATH
-          gcc -Os -s -ffunction-sections -fdata-sections -flto -Wl,--gc-sections,-flto -L$GITHUB_WORKSPACE/.github/workflows/lib ./**.c -lm -lX11 -lGL -lmikmod -lz -I./include -o zoom
+          gcc -Os -s -ffunction-sections -fdata-sections -flto -Wl,--gc-sections,-flto ./**.c -lm -lpthread -lX11 -lGL -lmikmod -lz -I./include -o zoom
 
       - name: Check executable size and update README
         run: |

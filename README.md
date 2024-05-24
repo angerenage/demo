@@ -28,11 +28,11 @@ Current total size: 59949 bytes
 - Jellyfish rendering
 - Cells, DNA and atoms rendering
 - Music
+- Minify shaders
 
 ### TODO
 
 - Credit scene
-- Minify shaders
 
 ## Building the Project
 
@@ -51,12 +51,14 @@ To build this project, you will need GCC for compiling and OpenGL libraries for 
 	```bash
 	sudo apt-get update
 	sudo apt-get install -y libx11-dev libgl1-mesa-dev zlib1g-dev
+
+	sudo apt update
+	sudo apt install libmikmod-dev
 	```
-	You will also need libmikmod found at https://sourceforge.net/projects/mikmod/files/libmikmod/3.3.11.1/libmikmod-3.3.11.1.tar.gz/download
 
 2. Compile the project:
 	```bash
-	gcc -I./include ./**.c -lm -lX11 -lGL -lmikmod -o zoomDemo
+	gcc -I./include ./**.c -lm -lpthread -lX11 -lGL -lmikmod -lz -o zoomDemo
 	```
 
 3. Run the executable:
