@@ -112,7 +112,7 @@ int main() {
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	float defaultTime = getTime(6);
+	float defaultTime = getTime(0);
 	float lastTime = defaultTime;
 
 	while (running) {

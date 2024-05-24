@@ -1016,7 +1016,7 @@ static const char cellFragSrc[] = "#version 330 core\n"
 		"}"
 	"i+=pow(1.-i,4.)*.8;"
 	"i*=min(camDist,1);"
-	"vec3 s=mix(i*f,f,clamp(0.,1.,(camDist-35.)/10.));"
+	"vec3 s=mix(i*f,f,clamp((camDist-35.)/10.,0.,1.));"
 	"c=vec4(s,1.);"
 "}";
 
