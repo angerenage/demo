@@ -90,6 +90,33 @@ GLuint compileComputeShader(const char *shaderCode) {
 	return ID;
 }
 
+// --------------------------- TEXT SHADERS ---------------------------
+
+static const char textVertSrc[] = "#version 330 core\n"
+"layout(location=0) in vec3 pA;"
+"out float id;"
+"uniform mat4 model;"
+"uniform float aspectRatio;"
+"void main()"
+"{"
+	"id=pA.z;"
+	"vec2 f=pA.xy;"
+	"f.y*=aspectRatio;"
+	"gl_Position=model*vec4(f.xy,-1,1);"
+"}";
+
+static const char textFragSrc[] = "#version 330 core\n"
+"out vec4 c;"
+"in float id;"
+"uniform float time;"
+"void main()"
+"{"
+	"float f=fract(sin(id*.1)*1e4)*.5+id/1e2;"
+	"if(f>time*7.)"
+		"discard;"
+	"c=vec4(1.);"
+"}";
+
 // --------------------------- GALAXY SHADERS ---------------------------
 
 static const char galaxyVertSrc[] = "#version 330 core\n"
@@ -317,32 +344,6 @@ static const char planetFragSrc[] = "#version 330 core\n"
 	"float l=min(camDist,.5);"
 	"l*=1./.5;"
 	"c=vec4(u*mix(1.,0.,l)+u*dot(fragNormal,lightDir),1.);"
-"}";
-
-// --------------------------- TEXT SHADERS ---------------------------
-
-static const char textVertSrc[] = "#version 330 core\n"
-"layout(location=0) in vec3 pA;"
-"out float id;"
-"uniform float aspectRatio;"
-"void main()"
-"{"
-	"id=pA.z;"
-	"vec2 f=pA.xy/10.;"
-	"f.x/=aspectRatio;"
-	"gl_Position=vec4(f,-1,1)-vec4(.9,.8,0.,0.);"
-"}";
-
-static const char textFragSrc[] = "#version 330 core\n"
-"out vec4 c;"
-"in float id;"
-"uniform float time;"
-"void main()"
-"{"
-	"float f=fract(sin(id*.1)*1e4)*.5+id/1e2;"
-	"if(f>time*7.)"
-		"discard;"
-	"c=vec4(1.);"
 "}";
 
 // --------------------------- NOISE SHADERS ---------------------------

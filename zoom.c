@@ -101,7 +101,7 @@ int main() {
 	Mesh particles = createParticles(100, 1.0);
 	initJellyfish();
 
-	Mesh t = createText(L"Appuyez sur Espace pour commencer");
+	Mesh openingText = createText(L"Appuyez sur Espace pour commencer");
 
 	initMolecules();
 	generateDoubleHelix(130, 1.0, 82.0);
@@ -127,13 +127,18 @@ int main() {
 		
 		// Drawing text
 		if (!launched) {
+			mat4 model = getIdentity();
+			translationMatrix(&model, (vec3){-0.9, -0.8, 0.0});
+			scaleMatrix(&model, (vec3){0.08, 0.08, 0.08});
+			
 			glUseProgram(textShader);
 
+			glUniformMatrix4fv(glGetUniformLocation(textShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
 			glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
 			glUniform1f(glGetUniformLocation(textShader, "time"), ftime);
 
-			glBindVertexArray(t.VAO);
-			glDrawElements(GL_TRIANGLES, t.indexCount, GL_UNSIGNED_INT, NULL);
+			glBindVertexArray(openingText.VAO);
+			glDrawElements(GL_TRIANGLES, openingText.indexCount, GL_UNSIGNED_INT, NULL);
 		}
 		else {
 			vec3 camPos;
@@ -356,6 +361,9 @@ int main() {
 				renderAtoms(projection, view, ftime);
 				renderDNA(projection, view, camPos, ftime - getTime(11));
 			}
+			else if (currentScene == CREDIT_SCENE) {
+				
+			}
 
 			lastCamPos.x = camPos.x;
 			lastCamPos.y = camPos.y;
@@ -376,7 +384,7 @@ int main() {
 	freeMesh(planet);
 	freeMesh(water);
 	freeMesh(particles);
-	freeMesh(t);
+	freeMesh(openingText);
 	cleanupWater();
 	cleanupJellyfish();
 	cleanupMolecules();

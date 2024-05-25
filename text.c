@@ -473,7 +473,7 @@ Glyph getGlyphForCharacter(wchar_t c) {
 		}
 		else if (c == L'è') {
 			return (Glyph) {
-				{ // é
+				{ // è
 					0b00111000,
 					0b01010101,
 					0b01010110,
