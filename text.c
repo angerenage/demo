@@ -583,39 +583,41 @@ CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
 }
 
 void fixHorizontal(Text *text, HorizontalAnchor anchor, vec2 screenSize, float distance) {
-	float textWidth = text->width * text->scale * screenSize.x;
+	float textWidth = (text->width * text->scale) - (0.11f * text->scale);
+	distance /= screenSize.x;
 
 	switch (anchor) {
 		default:
-		case RIGHT_ANCHOR:
-			text->pos.x = 1.0f - ((distance + textWidth) / screenSize.x) + (0.11f * text->scale);
+		case LEFT_ANCHOR:
+			text->pos.x = distance - 1.0f;
 			break;
 
 		case CENTER_ANCHOR:
-			text->pos.x = ((-text->width / 2.0f) * text->scale) + (distance / screenSize.x);
+			text->pos.x = distance - (textWidth / 2.0f);
 			break;
 
-		case LEFT_ANCHOR:
-			text->pos.x = (distance / screenSize.x) - 1.0f;
+		case RIGHT_ANCHOR:
+			text->pos.x = 1.0f - distance - textWidth;
 			break;
 	}
 }
 
 void fixVertical(Text *text, VerticalAnchor anchor, vec2 screenSize, float distance) {
-	float textHeight = (0.88f * text->scale * screenSize.y) * (screenSize.x / screenSize.y);
+	float textHeight = ((0.88f * text->scale * screenSize.y) * (screenSize.x / screenSize.y)) / screenSize.y;
+	distance /= screenSize.y;
 
 	switch (anchor) {
 		default:
 		case TOP_ANCHOR:
-			text->pos.y = 1.0f - (distance / screenSize.y);
+			text->pos.y = 1.0f - distance;
 			break;
 
 		case MIDDLE_ANCHOR:
-			text->pos.y = ((0.88f * (screenSize.x / screenSize.y)) / 2.0f) * text->scale + (distance / screenSize.y);
+			text->pos.y = distance + (textHeight / 2.0f);
 			break;
 
 		case BOTTOM_ANCHOR:
-			text->pos.y = ((distance + textHeight) / screenSize.y) - 1.0f;
+			text->pos.y = distance + textHeight - 1.0f;
 			break;
 	}
 }
