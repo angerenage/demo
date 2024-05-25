@@ -15,7 +15,7 @@
 #include "molecules.h"
 #include "text.h"
 
-vec2 screenSize = {600.0, 800.0};
+vec2 screenSize = {800.0, 600.0};
 
 bool running = true;
 bool launched = false;
@@ -101,14 +101,15 @@ int main() {
 	Mesh particles = createParticles(100, 1.0);
 	initJellyfish();
 
-	Mesh openingText = createText(L"Appuyez sur Espace pour commencer");
+	Text openingText = createText(L"Appuyez sur Espace pour commencer");
+	openingText.scale = 0.08;
 
 	initMolecules();
 	generateDoubleHelix(130, 1.0, 82.0);
 	generateAtom();
 
 	
-	projection = projectionMatrix(M_PI / 4.0, 800.0f / 600.0f, 0.001f, 1000.0f);
+	projection = projectionMatrix(M_PI / 4.0, screenSize.x / screenSize.y, 0.001f, 1000.0f);
 	vec3 lastCamPos = initializeCameraPosition();
 	
 	clock_gettime(CLOCK_MONOTONIC, &start);
@@ -127,9 +128,12 @@ int main() {
 		
 		// Drawing text
 		if (!launched) {
+			fixHorizontal(&openingText, CENTER_ANCHOR, screenSize, 0.0);
+			fixVertical(&openingText, BOTTOM_ANCHOR, screenSize, 100.0);
+
 			mat4 model = getIdentity();
-			translationMatrix(&model, (vec3){-0.9, -0.8, 0.0});
-			scaleMatrix(&model, (vec3){0.08, 0.08, 0.08});
+			translationMatrix(&model, openingText.pos);
+			scaleMatrix(&model, (vec3){openingText.scale, openingText.scale, openingText.scale});
 			
 			glUseProgram(textShader);
 
@@ -137,8 +141,8 @@ int main() {
 			glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
 			glUniform1f(glGetUniformLocation(textShader, "time"), ftime);
 
-			glBindVertexArray(openingText.VAO);
-			glDrawElements(GL_TRIANGLES, openingText.indexCount, GL_UNSIGNED_INT, NULL);
+			glBindVertexArray(openingText.mesh.VAO);
+			glDrawElements(GL_TRIANGLES, openingText.mesh.indexCount, GL_UNSIGNED_INT, NULL);
 		}
 		else {
 			vec3 camPos;
@@ -384,7 +388,7 @@ int main() {
 	freeMesh(planet);
 	freeMesh(water);
 	freeMesh(particles);
-	freeMesh(openingText);
+	freeMesh(openingText.mesh);
 	cleanupWater();
 	cleanupJellyfish();
 	cleanupMolecules();

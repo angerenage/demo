@@ -59,7 +59,7 @@ void initWindow(vec2 size) {
 
 	window = XCreateWindow(
 		display, root,
-		0, 0, size.y, size.x, 0,
+		0, 0, size.x, size.y, 0,
 		vi->depth, InputOutput,
 		vi->visual,
 		CWBorderPixel | CWColormap | CWEventMask, &swa

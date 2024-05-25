@@ -497,7 +497,14 @@ Glyph getGlyphForCharacter(wchar_t c) {
 	};
 }
 
-Mesh createText(wchar_t *text) {
+Text createText(wchar_t *text) {
+	Text result = {
+		.text = text,
+		.width = wcslen(text) * 0.66f,
+		.pos = (vec3){0.0, 0.0, 0.0},
+		.scale = 1.0f,
+	};
+
 	int charId = 0;
 	unsigned int totalSquareCount = 0;
 
@@ -538,7 +545,8 @@ Mesh createText(wchar_t *text) {
 	free(points);
 	free(indices);
 
-	return (Mesh){vao, pointCount, indexCount};
+	result.mesh = (Mesh){vao, pointCount, indexCount};
+	return result;
 }
 
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
@@ -572,4 +580,42 @@ CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
 
 	*squareNumber = squareNum;
 	return squares;
+}
+
+void fixHorizontal(Text *text, HorizontalAnchor anchor, vec2 screenSize, float distance) {
+	float textWidth = text->width * text->scale * screenSize.x;
+
+	switch (anchor) {
+		default:
+		case RIGHT_ANCHOR:
+			text->pos.x = -1.0f + ((distance + textWidth) / screenSize.x);
+			break;
+
+		case CENTER_ANCHOR:
+			text->pos.x = ((-text->width / 2.0f) * text->scale) + (distance / screenSize.x);
+			break;
+
+		case LEFT_ANCHOR:
+			text->pos.x = 1.0f - ((distance + textWidth) / screenSize.x);
+			break;
+	}
+}
+
+void fixVertical(Text *text, VerticalAnchor anchor, vec2 screenSize, float distance) {
+	float textHeight = (0.88f * text->scale * screenSize.y) * (screenSize.x / screenSize.y);
+
+	switch (anchor) {
+		default:
+		case TOP_ANCHOR:
+			text->pos.y = 1.0f - ((distance + textHeight) / screenSize.y);
+			break;
+
+		case MIDDLE_ANCHOR:
+			text->pos.y = ((0.88f * (screenSize.x / screenSize.y)) / 2.0f) * text->scale + (distance / screenSize.y);
+			break;
+
+		case BOTTOM_ANCHOR:
+			text->pos.y = -1.0f + ((distance + textHeight) / screenSize.y);
+			break;
+	}
 }
