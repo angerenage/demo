@@ -588,7 +588,7 @@ void fixHorizontal(Text *text, HorizontalAnchor anchor, vec2 screenSize, float d
 	switch (anchor) {
 		default:
 		case RIGHT_ANCHOR:
-			text->pos.x = -1.0f + ((distance + textWidth) / screenSize.x);
+			text->pos.x = 1.0f - ((distance + textWidth) / screenSize.x) + (0.11f * text->scale);
 			break;
 
 		case CENTER_ANCHOR:
@@ -596,7 +596,7 @@ void fixHorizontal(Text *text, HorizontalAnchor anchor, vec2 screenSize, float d
 			break;
 
 		case LEFT_ANCHOR:
-			text->pos.x = 1.0f - ((distance + textWidth) / screenSize.x);
+			text->pos.x = (distance / screenSize.x) - 1.0f;
 			break;
 	}
 }
@@ -607,7 +607,7 @@ void fixVertical(Text *text, VerticalAnchor anchor, vec2 screenSize, float dista
 	switch (anchor) {
 		default:
 		case TOP_ANCHOR:
-			text->pos.y = 1.0f - ((distance + textHeight) / screenSize.y);
+			text->pos.y = 1.0f - (distance / screenSize.y);
 			break;
 
 		case MIDDLE_ANCHOR:
@@ -615,7 +615,7 @@ void fixVertical(Text *text, VerticalAnchor anchor, vec2 screenSize, float dista
 			break;
 
 		case BOTTOM_ANCHOR:
-			text->pos.y = -1.0f + ((distance + textHeight) / screenSize.y);
+			text->pos.y = ((distance + textHeight) / screenSize.y) - 1.0f;
 			break;
 	}
 }
