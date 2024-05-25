@@ -1089,7 +1089,7 @@ static const char atomFragSrc[] = "#version 330 core\n"
 "in vec3 fragPos,fragNormal,color;"
 "void main()"
 "{"
-	"c=vec4(vec3(color*min(1.,length(fragPos)*.8)*((dot(vec3(0.,-1.,0.),fragNormal)+1.)/2.)),1.);"
+	"c=vec4(vec3(color*min(1.,length(fragPos)*0.6)*((dot(vec3(0.,-1.,0.),fragNormal)+1.)/2.)),1.);"
 "}";
 
 static const char electronVertSrc[] = "#version 330 core\n"

@@ -152,7 +152,7 @@ static const vec3 surfacePos = {0.0, 2.0, 0.0};
 static const vec3 sunDir = (vec3){0.0, 0.0, -4.86};
 static CurveDef waterScene(vec3 startPos, vec3 startDir) {
 	vec3 waterSceneStartPos = vec3_add(vec3_scale(normalize(sunDir), 50), surfacePos);
-	waterSceneStartPos.y = 100.0;
+	waterSceneStartPos.y = 90.0;
 
 	return (CurveDef){waterSceneStartPos, vec3_add((vec3){0.0, -25.0, 0.0}, waterSceneStartPos), vec3_add(vec3_scale(sunDir, 5), surfacePos), surfacePos};
 }
