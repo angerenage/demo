@@ -13,9 +13,9 @@ The goal of this demo is to participate in both the 64 KB and 64 MB tracks of th
 
 ## Features
 
-Current executable size: 38344 bytes (using UPX)\
+Current executable size: 39308 bytes (using UPX)\
 Current music file size: 22377 bytes\
-Current total size: 60721 bytes
+Current total size: 61685 bytes
 
 ### Done
 
