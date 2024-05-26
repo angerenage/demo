@@ -29,10 +29,11 @@ Current total size: 61685 bytes
 - Cells, DNA and atoms rendering
 - Music
 - Minify shaders
+- Credit scene
 
 ### TODO
 
-- Credit scene
+- Taking the competition
 
 ## Building the Project
 
