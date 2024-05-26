@@ -456,6 +456,28 @@ Glyph getGlyphForCharacter(wchar_t c) {
 				return uppercase[c - 'A'];
 			}
 		}
+		else if (c == L'-') {
+			return (Glyph) {
+				{ // -
+					0b00000000,
+					0b00010000,
+					0b00010000,
+					0b00010000,
+					0b00000000,
+				}
+			};
+		}
+		else if (c == L'"') {
+			return (Glyph) {
+				{ // ""
+					0b00000000,
+					0b00000111,
+					0b00000000,
+					0b00000111,
+					0b00000000,
+				}
+			};
+		}
 		// Punctuation
 	}
 	else {
@@ -497,12 +519,12 @@ Glyph getGlyphForCharacter(wchar_t c) {
 	};
 }
 
-Text createText(wchar_t *text) {
+Text createText(wchar_t *text, float scale) {
 	Text result = {
 		.text = text,
 		.width = wcslen(text) * 0.66f,
 		.pos = (vec3){0.0, 0.0, 0.0},
-		.scale = 1.0f,
+		.scale = scale,
 	};
 
 	int charId = 0;

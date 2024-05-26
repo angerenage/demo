@@ -38,7 +38,7 @@ typedef enum horizontalAnchor_e {
 
 Glyph getGlyphForCharacter(wchar_t c);
 
-Text createText(wchar_t *text);
+Text createText(wchar_t *text, float scale);
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber);
 
 void fixHorizontal(Text *text, HorizontalAnchor anchor, vec2 screenSize, float distance);

@@ -101,8 +101,31 @@ int main() {
 	Mesh particles = createParticles(100, 1.0);
 	initJellyfish();
 
-	Text openingText = createText(L"Appuyez sur Espace pour commencer");
-	openingText.scale = 0.08;
+	Text openingText = createText(L"Appuyez sur Espace pour commencer", 0.08);
+
+
+	Text creditText = createText(L"Démo imaginée et développée par Ange Rollet", 0.065);
+	Text musicTitleText = createText(L"- Musique -", 0.08);
+	Text musicCreditText = createText(L"\"And I will ever be\" par Elmusho", 0.06);
+	Text thanksTitleText = createText(L"- Remerciements spéciaux -", 0.08);
+	Text thanksParis8Text = createText(L"Université Paris 8    -    Farès Belhadj     ", 0.055);
+	Text thanksWaterText = createText(L"      Gasgiant    -    GarrettGunnell", 0.055);
+	Text thanksStackText = createText(L"Stackoverflow    -    Stackexchange", 0.055);
+	Text thanksElseText = createText(L"ChatGPT    -    Ronja  ", 0.055);
+	Text thanksShadersText = createText(L"Patricio Gonzalez Vivo    -    Jen Lowe              ", 0.055);
+
+	Text *credits[] = {
+		&creditText,
+		&musicTitleText,
+		&musicCreditText,
+		&thanksTitleText,
+		&thanksParis8Text,
+		&thanksWaterText,
+		&thanksStackText,
+		&thanksElseText,
+		&thanksShadersText,
+	};
+
 
 	initMolecules();
 	generateDoubleHelix(130, 1.0, 82.0);
@@ -366,7 +389,50 @@ int main() {
 				renderDNA(projection, view, camPos, ftime - getTime(11));
 			}
 			else if (currentScene == CREDIT_SCENE) {
-				
+				fixHorizontal(&creditText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&creditText, TOP_ANCHOR, screenSize, screenSize.y * 0.175 - 25.0);
+
+
+				fixHorizontal(&musicTitleText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&musicTitleText, TOP_ANCHOR, screenSize, screenSize.y * 0.35);
+
+				fixHorizontal(&musicCreditText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&musicCreditText, TOP_ANCHOR, screenSize, screenSize.y * 0.55);
+
+
+				fixHorizontal(&thanksTitleText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksTitleText, TOP_ANCHOR, screenSize, screenSize.y * 0.75);
+
+				fixHorizontal(&thanksParis8Text, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksParis8Text, MIDDLE_ANCHOR, screenSize, 0.0);
+
+				fixHorizontal(&thanksWaterText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksWaterText, MIDDLE_ANCHOR, screenSize, screenSize.y * -0.2);
+
+				fixHorizontal(&thanksStackText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksStackText, MIDDLE_ANCHOR, screenSize, screenSize.y * -0.4);
+
+				fixHorizontal(&thanksElseText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksElseText, MIDDLE_ANCHOR, screenSize, screenSize.y * -0.6);
+
+				fixHorizontal(&thanksShadersText, CENTER_ANCHOR, screenSize, 0.0);
+				fixVertical(&thanksShadersText, MIDDLE_ANCHOR, screenSize, screenSize.y * -0.8);
+
+
+				for (int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
+					mat4 model = getIdentity();
+					translationMatrix(&model, credits[i]->pos);
+					scaleMatrix(&model, (vec3){credits[i]->scale, credits[i]->scale, credits[i]->scale});
+					
+					glUseProgram(textShader);
+
+					glUniformMatrix4fv(glGetUniformLocation(textShader, "model"), 1, GL_FALSE, (GLfloat*)&model);
+					glUniform1f(glGetUniformLocation(textShader, "aspectRatio"), screenSize.x / screenSize.y);
+					glUniform1f(glGetUniformLocation(textShader, "time"), ftime - getTime(13) - (i * 0.4f));
+
+					glBindVertexArray(credits[i]->mesh.VAO);
+					glDrawElements(GL_TRIANGLES, credits[i]->mesh.indexCount, GL_UNSIGNED_INT, NULL);
+				}
 			}
 
 			lastCamPos.x = camPos.x;
