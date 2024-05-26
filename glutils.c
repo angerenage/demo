@@ -55,7 +55,7 @@ void initWindow(vec2 size) {
 
 	swa.colormap = XCreateColormap(display, root, vi->visual, AllocNone);
 	swa.border_pixel = 0;
-	swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+	swa.event_mask = KeyPressMask | StructureNotifyMask;
 
 	window = XCreateWindow(
 		display, root,
@@ -67,6 +67,12 @@ void initWindow(vec2 size) {
 
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
+	
+	Atom wm_state = XInternAtom(display, "_NET_WM_STATE", False);
+	Atom fullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
+	Atom xa_atom = XInternAtom(display, "ATOM", False);
+
+	XChangeProperty(display, window, wm_state, xa_atom, 32, PropModeReplace, (unsigned char *)&fullscreen, 1);
 
 	XMapWindow(display, window);
 	XStoreName(display, window, "Zoom Demo");

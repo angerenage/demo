@@ -455,6 +455,9 @@ int main() {
 	freeMesh(water);
 	freeMesh(particles);
 	freeMesh(openingText.mesh);
+	for (int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
+		freeMesh(credits[i]->mesh);
+	}
 	cleanupWater();
 	cleanupJellyfish();
 	cleanupMolecules();

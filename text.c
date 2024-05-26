@@ -469,7 +469,7 @@ Glyph getGlyphForCharacter(wchar_t c) {
 		}
 		else if (c == L'"') {
 			return (Glyph) {
-				{ // ""
+				{ // "
 					0b00000000,
 					0b00000111,
 					0b00000000,
