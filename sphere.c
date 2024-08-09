@@ -23,8 +23,8 @@ static vec3 midpoint(vec3 v1, vec3 v2) {
 }
 
 Mesh generateIcosphere(int subdivisions) {
-	vec3* vertices = malloc(sizeof(vec3) * 12);
-	int* indices = malloc(sizeof(int) * 60);
+	vec3* vertices = (vec3*)malloc(sizeof(vec3) * 12);
+	unsigned int* indices = (unsigned int*)malloc(sizeof(int) * 60);
 	int vertexCount = 12;
 	int indexCount = 60;
 
@@ -33,8 +33,7 @@ Mesh generateIcosphere(int subdivisions) {
 
 	for (int i = 0; i < subdivisions; i++) {
 		int newIndicesCount = indexCount * 4;
-		int* newIndices = malloc(sizeof(int) * newIndicesCount);
-		int newVertexCount = 0;
+		unsigned int* newIndices = (unsigned int*)malloc(sizeof(int) * newIndicesCount);
 
 		for (int j = 0; j < indexCount; j += 3) {
 			int idx0 = indices[j];
@@ -69,8 +68,6 @@ Mesh generateIcosphere(int subdivisions) {
 			newIndices[baseIdx + 9] = midIdx2;
 			newIndices[baseIdx + 10] = midIdx1;
 			newIndices[baseIdx + 11] = idx2;
-
-			newVertexCount += 3;
 		}
 
 		free(indices);

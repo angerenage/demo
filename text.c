@@ -1,6 +1,6 @@
 #include "text.h"
 
-const static Glyph digits[] = {
+static const Glyph digits[] = {
 	{ // 0
 		0b00111110,
 		0b01010001,
@@ -73,7 +73,7 @@ const static Glyph digits[] = {
 	}
 };
 
-const static Glyph lowercase[] = {
+static const Glyph lowercase[] = {
 	{ // a
 		0b00100000,
 		0b01010100,
@@ -258,7 +258,7 @@ const static Glyph lowercase[] = {
 	}
 };
 
-const static Glyph uppercase[] = {
+static const Glyph uppercase[] = {
 	{ // A
 		0b01111110,
 		0b00010001,
@@ -443,80 +443,71 @@ const static Glyph uppercase[] = {
 	}
 };
 
-Glyph getGlyphForCharacter(wchar_t c) {
+static const Glyph special[] = {
+	{ // -
+		0b00000000,
+		0b00010000,
+		0b00010000,
+		0b00010000,
+		0b00000000,
+	},
+	{ // "
+		0b00000000,
+		0b00000111,
+		0b00000000,
+		0b00000111,
+		0b00000000,
+	},
+	{ // é
+		0b00111000,
+		0b01010100,
+		0b01010110,
+		0b01010101,
+		0b00011000,
+	},
+	{ // è
+		0b00111000,
+		0b01010101,
+		0b01010110,
+		0b01010100,
+		0b00011000,
+	}
+};
+
+Glyph *getGlyphForCharacter(wchar_t c) {
 	if (isascii(c)) {
 		if (isdigit(c)) {
-			return digits[c - '0'];
+			return &digits[c - '0'];
 		}
 		else if (isalpha(c)) {
 			if (islower(c)) {
-				return lowercase[c - 'a'];
+				return &lowercase[c - 'a'];
 			}
 			else {
-				return uppercase[c - 'A'];
+				return &uppercase[c - 'A'];
 			}
 		}
 		else if (c == L'-') {
-			return (Glyph) {
-				{ // -
-					0b00000000,
-					0b00010000,
-					0b00010000,
-					0b00010000,
-					0b00000000,
-				}
-			};
+			return &special[0];
 		}
 		else if (c == L'"') {
-			return (Glyph) {
-				{ // "
-					0b00000000,
-					0b00000111,
-					0b00000000,
-					0b00000111,
-					0b00000000,
-				}
-			};
+			return &special[1];
 		}
 		// Punctuation
 	}
 	else {
 		// Special case for é, è, ê, à, ... (if needed)
 		if (c == L'é') {
-			return (Glyph) {
-				{ // é
-					0b00111000,
-					0b01010100,
-					0b01010110,
-					0b01010101,
-					0b00011000,
-				}
-			};
+			return &special[2];
 		}
 		else if (c == L'è') {
-			return (Glyph) {
-				{ // è
-					0b00111000,
-					0b01010101,
-					0b01010110,
-					0b01010100,
-					0b00011000,
-				}
-			};
+			return &special[3];
 		}
 
 		printf("Non ascii character\n");
 	}
 
-	return (Glyph) {
-		{ // space
-			0b00000000,
-			0b00000000,
-			0b00000000,
-			0b00000000,
-			0b00000000,
-		}
-	};
+	return NULL;
 }
 
 Text createText(wchar_t *text, float scale) {
@@ -535,31 +526,32 @@ Text createText(wchar_t *text, float scale) {
 	unsigned int pointCount = 0;
 	unsigned int indexCount = 0;
 
-	while (*text != '\0') {
-		Glyph g = getGlyphForCharacter(*text);
+	while (text[charId] != '\0') {
+		Glyph *g = getGlyphForCharacter(text[charId]);
 
-		int squareNumber = 0;
-		CharSquare *squares = createCharacter(g, &charId, &squareNumber);
-		if (squareNumber > 0 && squares) {
-			points = realloc(points, (pointCount + squareNumber * 4) * sizeof(vec3));
-			indices = realloc(indices, (indexCount + squareNumber * 6) * sizeof(unsigned int));
+		if (g) {
+			int squareNumber = 0;
+			CharSquare *squares = createCharacter(*g, &charId, &squareNumber);
+			if (squareNumber > 0 && squares) {
+				points = realloc(points, (pointCount + squareNumber * 4) * sizeof(vec3));
+				indices = realloc(indices, (indexCount + squareNumber * 6) * sizeof(unsigned int));
 
-			for (int i = 0; i < squareNumber; i++) {
-				for (int j = 0; j < 4; j++) { // Each square has 4 vertices
-					points[pointCount].x = squares[i].p[j].x;
-					points[pointCount].y = squares[i].p[j].y;
-					points[pointCount].z = squares[i].id;
-					pointCount++;
+				for (int i = 0; i < squareNumber; i++) {
+					for (int j = 0; j < 4; j++) { // Each square has 4 vertices
+						points[pointCount].x = squares[i].p[j].x;
+						points[pointCount].y = squares[i].p[j].y;
+						points[pointCount].z = squares[i].id;
+						pointCount++;
+					}
+					for (int k = 0; k < 6; k++) { // Each square has 6 indices
+						indices[indexCount++] = squares[i].i[k] + totalSquareCount * 4;
+					}
+					totalSquareCount++;
 				}
-				for (int k = 0; k < 6; k++) { // Each square has 6 indices
-					indices[indexCount++] = squares[i].i[k] + totalSquareCount * 4;
-				}
-				totalSquareCount++;
+				free(squares);
 			}
-			free(squares);
 		}
 
-		text++;
 		charId++;
 	}
 
@@ -578,7 +570,7 @@ CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber) {
 	if (squares) {
 		for (int row = 0; row < 8; row++) {
 			for (int column = 0; column < 5; column++) {
-				if (g.c[column] & (1 << row)) {
+				if (g[column] & (1 << row)) {
 					squares[squareNum].id = (*charId) * 5 * 8 + squareNum;
 
 					vec2 origin = (vec2){(column + 6 * (*charId)) * 0.11f, row * -0.11f};

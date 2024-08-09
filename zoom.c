@@ -419,7 +419,7 @@ int main() {
 				fixVertical(&thanksShadersText, MIDDLE_ANCHOR, screenSize, screenSize.y * -0.8);
 
 
-				for (int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
+				for (unsigned int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
 					mat4 model = getIdentity();
 					translationMatrix(&model, credits[i]->pos);
 					scaleMatrix(&model, (vec3){credits[i]->scale, credits[i]->scale, credits[i]->scale});
@@ -455,7 +455,7 @@ int main() {
 	freeMesh(water);
 	freeMesh(particles);
 	freeMesh(openingText.mesh);
-	for (int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
+	for (unsigned int i = 0; i < sizeof(credits) / sizeof(Text*); i++) {
 		freeMesh(credits[i]->mesh);
 	}
 	cleanupWater();

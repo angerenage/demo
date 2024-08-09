@@ -37,7 +37,7 @@ GLuint createTextureArrayRG(int width, int height, int layer);
 GLuint createFramebuffer(GLuint texture);
 GLuint createFramebufferMultisampleDepth(GLuint depth, GLuint color);
 
-GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *indices, int indexCount);
+GLuint createIndexedVAO(const vec3 *vertices, unsigned int vertexCount, const unsigned int *indices, int indexCount);
 GLuint createVAO(const vec3 *vertices, int vertexCount);
 GLuint setupInstanceBuffer(GLuint instanceVAO, const vec3 *positions, int positionsCount);
 

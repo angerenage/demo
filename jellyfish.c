@@ -3,8 +3,6 @@
 #define NUM_POINTS 64
 #define NUM_SLICES 25
 
-static const float a = 3.0f, b = 1.5f;
-
 vec3 bezierPoints[NUM_SLICES];
 
 void halfBezier(vec3 P0, vec3 P1, vec3 P2, vec3 P3, int resolution, vec3* points) {
@@ -28,7 +26,7 @@ Mesh generateDome(vec2 size, float inset) {
 	const int vertexNumber = (NUM_POINTS * (NUM_SLICES - 1));
 
 	vec3 domeVertices[vertexNumber + 1];
-	int indices[vertexNumber * 6];
+	unsigned int indices[vertexNumber * 6];
 
 	// Generate dome vertices
 	for (int i = 0; i < NUM_SLICES - 1; i++) {
@@ -70,7 +68,7 @@ Mesh generateDome(vec2 size, float inset) {
 		}
 	}
 
-	GLuint vao = createIndexedVAO(domeVertices, vertexNumber + 1, indices, vertexNumber * 6);
+	GLuint vao = createIndexedVAO(domeVertices, vertexNumber + 1, (unsigned int *)indices, vertexNumber * 6);
 	
 	return (Mesh){vao, vertexNumber + 1, vertexNumber * 6};
 }
@@ -80,7 +78,7 @@ Mesh genarateTentacles(vec3 pos, vec3 size, int resolution) {
 	const int indiciesCount = 6 * resolution;
 
 	vec3 *vertices = (vec3*)malloc(sizeof(vec3) * vertexCount);
-	int *indices = (int*)malloc(sizeof(int) * indiciesCount);
+	unsigned int *indices = (unsigned int*)malloc(sizeof(int) * indiciesCount);
 
 	for (int i = 0; i < vertexCount; i += 2) {
 		float x = (float)i / ((float)resolution * 2.0f);

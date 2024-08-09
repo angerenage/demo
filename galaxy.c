@@ -10,7 +10,7 @@ Mesh generateGalaxy(unsigned int num_stars) {
 		float sigma = 0.5f;		// Spread for the bulge
 		float C = 0.05f;		// Initial height of the arms
 
-		for (int i = 0; i < num_stars - 1; i++) {
+		for (unsigned int i = 0; i < num_stars - 1; i++) {
 			float angle = ((float)rand() / (float)RAND_MAX) * 2 * M_PI;
 			float r = sqrt((float)rand() / (float)RAND_MAX) * r_max;
 

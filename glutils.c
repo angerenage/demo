@@ -224,7 +224,7 @@ GLuint createFramebufferMultisampleDepth(GLuint depth, GLuint color) {
 	return fbo;
 }
 
-GLuint createIndexedVAO(const vec3 *vertices, int vertexCount, const int *indices, int indexCount) {
+GLuint createIndexedVAO(const vec3 *vertices, unsigned int vertexCount, const unsigned int *indices, int indexCount) {
 	GLuint vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);

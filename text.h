@@ -10,9 +10,7 @@
 
 #include "glutils.h"
 
-typedef struct glyph_s {
-	uint8_t c[5];
-} Glyph;
+typedef const uint8_t Glyph[5];
 
 typedef struct charSquare_s {
 	vec2 p[4];
@@ -36,7 +34,7 @@ typedef enum horizontalAnchor_e {
 	RIGHT_ANCHOR, CENTER_ANCHOR, LEFT_ANCHOR
 } HorizontalAnchor;
 
-Glyph getGlyphForCharacter(wchar_t c);
+Glyph *getGlyphForCharacter(wchar_t c);
 
 Text createText(wchar_t *text, float scale);
 CharSquare *createCharacter(Glyph g, int *charId, int *squareNumber);

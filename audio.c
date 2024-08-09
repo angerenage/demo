@@ -139,6 +139,8 @@ static void* audioThreadRoutine(void *arg) {
 	else {
 		fprintf(stderr, "Could not load module, reason: %s\n", MikMod_strerror(MikMod_errno));
 	}
+
+	return NULL;
 }
 
 void initAudio() {

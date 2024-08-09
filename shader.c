@@ -229,85 +229,58 @@ static const char sphereVertSrc[] = "#version 330 core\n"
 	"gl_Position=vec4(pA,1.);"
 "}";
 
-static const char sphereGemoSrc[] = R"glsl(#version 330 core
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 100) out;
-
-out vec3 fragPosition;
-out vec3 fragNormal;
-
-uniform mat4 model;
-uniform mat4 projection;
-uniform mat4 view;
-uniform int subdivisions;
-uniform float radius;
-
-const int MAX_SUBDIVISIONS = 5;
-
-vec3 calculateNormal(vec3 point) {
-	return normalize(point);
-}
-
-void emitVertex(vec3 position) {
-	fragPosition = position * radius;
-	fragNormal = calculateNormal(position);
-	gl_Position = projection * view * model * vec4(normalize(position) * radius, 1.);
-	EmitVertex();
-}
-
-void subdivideAndEmit(vec3 A, vec3 B, vec3 C, int s) {
-	if (s <= 1 || s > MAX_SUBDIVISIONS) {
-		emitVertex(A);
-		emitVertex(B);
-		emitVertex(C);
-		EndPrimitive();
-	} else {
-		vec3 lastPoints[MAX_SUBDIVISIONS + 1];
-		lastPoints[0] = A;
-
-		for (int i = 1; i <= s; i++) {
-			vec3 p1 = mix(A, B, float(i) / float(s));
-			vec3 p2 = mix(A, C, float(i) / float(s));
-
-			vec3 points[MAX_SUBDIVISIONS + 1];
-			points[0] = p1;
-			int pointCount = 1;
-
-			for (int j = 1; j <= i; j++) {
-				vec3 p3 = mix(p1, p2, float(j) / float(i));
-				points[pointCount++] = p3;
-
-				if (j > 1) {
-					emitVertex(lastPoints[j - 2]);
-					emitVertex(lastPoints[j - 1]);
-					emitVertex(points[j - 1]);
-					EndPrimitive();
-				}
-				
-				if (j <= i) {
-					vec3 p4 = p3 - (p2 - p1) / float(i);
-					emitVertex(lastPoints[j - 1]);
-					emitVertex(p3);
-					emitVertex(p4);
-					EndPrimitive();
-				}
-			}
-
-			for (int x = 0; x < pointCount; x++) {
-				lastPoints[x] = points[x];
-			}
-		}
-	}
-}
-
-void main() {
-	vec3 A = gl_in[0].gl_Position.xyz;
-	vec3 B = gl_in[1].gl_Position.xyz;
-	vec3 C = gl_in[2].gl_Position.xyz;
-
-	subdivideAndEmit(A, B, C, subdivisions);
-}
-)glsl";
+static const char sphereGemoSrc[] = "#version 330 core\n"
+"layout(triangles)in;"
+"layout(triangle_strip,max_vertices=100)out;"
+"out vec3 fragPosition,fragNormal;"
+"uniform mat4 model,projection,view;"
+"uniform int subdivisions;"
+"uniform float radius;"
+"void f(vec3 m)"
+"{"
+	"fragPosition=m*radius;"
+	"fragNormal=normalize(m);"
+	"gl_Position=projection*view*model*vec4(normalize(m)*radius,1);"
+	"EmitVertex();"
+"}"
+"void f(vec3 m,vec3 v,vec3 i,int s)"
+"{"
+	"if(s<=1||s>5)"
+		"f(m),f(v),f(i),EndPrimitive();"
+	"else"
+	"{"
+		"vec3 n[6];"
+		"n[0]=m;"
+		"for(int g=1;g<=s;g++)"
+		"{"
+			"vec3 l=mix(m,v,float(g)/float(s)),E=mix(m,i,float(g)/float(s)),u[6];"
+			"u[0]=l;"
+			"int c=1;"
+			"for(int m=1;m<=g;m++)"
+            "{"
+				"vec3 s=mix(l,E,float(m)/float(g));"
+				"u[c++]=s;"
+				"if(m>1)"
+					"f(n[m-2]),f(n[m-1]),f(u[m-1]),EndPrimitive();"
+				"if(m<=g)"
+				"{"
+					"vec3 i=s-(E-l)/float(g);"
+					"f(n[m-1]);"
+					"f(s);"
+					"f(i);"
+					"EndPrimitive();"
+				"}"
+			"}"
+			"for(int m=0;m<c;m++)"
+				"n[m]=u[m];"
+		"}"
+	"}"
+"}"
+"void main()"
+"{"
+	"vec3 m=gl_in[0].gl_Position.xyz,E=gl_in[1].gl_Position.xyz,v=gl_in[2].gl_Position.xyz;"
+	"f(m,E,v,subdivisions);"
+"}";
 
 // --------------------------- STAR SHADERS ---------------------------
 
@@ -664,166 +637,127 @@ static const char waterFragSrc[] = "#version 330 core\n"
 	"c=vec4(w,1.);"
 "}";
 
-static const char assembleMapsCompSrc[] = R"glsl(#version 430 core
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-layout(binding = 0, rgba16f) uniform readonly image2DArray spectrumTextures;
-layout(binding = 1, rgba16f) uniform image2DArray displacementTextures;
-layout(binding = 2, rg16f) uniform writeonly image2DArray slopeTextures;
-
-uniform vec2 lambda;
-uniform float foamDecayRate, foamBias, foamThreshold, foamAdd;
-
-vec4 Permute(vec4 data, vec3 id) {
-	return data * (1.0 - 2.0 * mod(id.x + id.y, 2.0));
-}
-
-void main() {
-	uvec3 id = gl_GlobalInvocationID;
-
-	for (int i = 0; i < 4; i++) {
-		vec4 htildeDisplacement = Permute(imageLoad(spectrumTextures, ivec3(id.xy, i * 2)), vec3(id));
-		vec4 htildeSlope = Permute(imageLoad(spectrumTextures, ivec3(id.xy, (i * 2) + 1)), vec3(id));
-		
-		vec2 dxdz = htildeDisplacement.xy;
-		vec2 dydxz = htildeDisplacement.zw;
-		vec2 dyxdyz = htildeSlope.xy;
-		vec2 dxxdzz = htildeSlope.zw;
-		
-		float jacobian = ((1.0 + (lambda.x * dxxdzz.x)) * (1.0 + (lambda.y * dxxdzz.y))) - (((lambda.x * lambda.y) * dydxz.y) * dydxz.y);
-		vec3 displacement = vec3(lambda.x * dxdz.x, dydxz.x, lambda.y * dxdz.y);
-		
-		vec2 slopes = dyxdyz / (vec2(1.0) + abs(dxxdzz * lambda));
-		float covariance = slopes.x * slopes.y;
-		
-		float foam = imageLoad(displacementTextures, ivec3(id.xy, i)).w;
-		foam *= exp(-foamDecayRate);
-		foam = clamp(foam, 0.0, 1.0);
-		
-		float biasedJacobian = max(0.0, -(jacobian - foamBias));
-		
-		if (biasedJacobian > foamThreshold)
-			foam += foamAdd * biasedJacobian;
-		
-		imageStore(displacementTextures, ivec3(id.xy, i), vec4(displacement, foam / 5.0));
-		imageStore(slopeTextures, ivec3(id.xy, i), vec4(slopes.xy, 0.0, 0.0));
-	}
-}
-)glsl";
+static const char assembleMapsCompSrc[] = "#version 430 core\n"
+"layout(local_size_x=8,local_size_y=8,local_size_z=1)in;"
+"layout(binding=0,rgba16f) uniform readonly image2DArray spectrumTextures;"
+"layout(binding=1,rgba16f) uniform image2DArray displacementTextures;"
+"layout(binding=2,rg16f) uniform writeonly image2DArray slopeTextures;"
+"uniform vec2 lambda;"
+"uniform float foamDecayRate,foamBias,foamThreshold,foamAdd;"
+"vec4 d(vec4 y,vec3 a)"
+"{"
+	"return y*(1.-2.*mod(a.x+a.y,2.));"
+"}"
+"void main()"
+"{"
+	"uvec3 a=gl_GlobalInvocationID;"
+	"for(int f=0;f<4;f++)"
+	"{"
+		"vec4 g=d(imageLoad(spectrumTextures,ivec3(a.xy,f*2)),vec3(a)),i=d(imageLoad(spectrumTextures,ivec3(a.xy,f*2+1)),vec3(a));"
+		"vec2 l=g.xy,v=g.zw,y=i.zw;"
+		"float s=imageLoad(displacementTextures,ivec3(a.xy,f)).w;"
+		"s=clamp(s*exp(-foamDecayRate),0.,1.);"
+		"float b=max(0.,(-1.-lambda.x*y.x)*(1.+lambda.y*y.y)+lambda.x*lambda.y*v.y*v.y+foamBias);"
+		"if(b>foamThreshold)"
+			"s+=foamAdd*b;"
+		"imageStore(displacementTextures,ivec3(a.xy,f),vec4(vec3(lambda.x*l.x,v.x,lambda.y*l.y),s/5.));"
+		"imageStore(slopeTextures,ivec3(a.xy,f),vec4((i.xy/(vec2(1)+abs(y*lambda))).xy,0,0));"
+	"}"
+"}";
 
 // --------------------------- FFT SHADERS ---------------------------
 
-static const char horizontalFFTSrc[] = R"glsl(#version 430 core
-#define SIZE 1024
-#define LOG_SIZE 10
+static const char horizontalFFTSrc[] = "#version 430 core\n"
+"layout(local_size_x=1024,local_size_y=1,local_size_z=1)in;"
+"layout(binding=0,rgba16f) uniform image2DArray _FourierTarget;"
+"shared vec4 u[2][1024];"
+"vec2 t(vec2 u,vec2 E)"
+"{"
+	"return vec2(u.x*E.x-u.y*E.y,u.x*E.y+u.y*E.x);"
+"}"
+"void t(uint u,uint v,out uvec2 x,inout vec2 E)"
+"{"
+	"float y=2*acos(-1.);"
+	"u=uint(1024)>>(u+1u&31u);"
+	"uint S=u*(v/u);"
+	"v=(S+v)%uint(1024);"
+	"E.y=sin(-y/float(1024)*float(S));"
+	"E.x=cos(-y/float(1024)*float(S));"
+	"E.y=-E.y;"
+	"x=uvec2(v,v+u);"
+"}"
+"vec4 r(uint v,vec4 E)"
+"{"
+	"u[0][v]=E;"
+	"barrier();"
+	"bool S=false;"
+	"uvec2 x;"
+	"vec2 i;"
+	"for(uint E=0u;E<uint(10);E++)"
+	"{"
+		"t(E,v,x,i);"
+		"vec4 y=u[uint(S)][x.y];"
+		"u[uint(!S)][v]=u[uint(S)][x.x]+vec4(t(i,y.xy),t(i,y.zw));"
+		"S=!S;"
+		"barrier();"
+	"}"
+	"return u[uint(S)][v];"
+"}"
+"void main()"
+"{"
+	"for(int E=0;E<8;E++)"
+	"{"
+		"vec4 u=imageLoad(_FourierTarget,ivec3(gl_GlobalInvocationID.xy,E));"
+		"u=r(gl_GlobalInvocationID.x,u);"
+		"imageStore(_FourierTarget,ivec3(gl_GlobalInvocationID.xy,E),u);"
+	"}"
+"}";
 
-layout(local_size_x = SIZE, local_size_y = 1, local_size_z = 1) in;
-layout(binding = 0, rgba16f) uniform image2DArray _FourierTarget;
-
-shared vec4 fftGroupBuffer[2][SIZE];
-
-vec2 ComplexMult(vec2 a, vec2 b) {
-	return vec2((a.x * b.x) - (a.y * b.y), (a.x * b.y) + (a.y * b.x));
-}
-
-void ButterflyValues(uint step, uint index, out uvec2 indices, inout vec2 twiddle) {
-	float twoPi = 2 * acos(-1.);
-	uint b = uint(SIZE) >> ((step + 1u) & 31u);
-	uint w = b * (index / b);
-	uint i = (w + index) % uint(SIZE);
-	
-	twiddle.y = sin(((-twoPi) / float(SIZE)) * float(w));
-	twiddle.x = cos(((-twoPi) / float(SIZE)) * float(w));
-	
-	twiddle.y = -twiddle.y;
-	indices = uvec2(i, i + b);
-}
-
-vec4 FFT(uint threadIndex, vec4 inputValue) {
-	fftGroupBuffer[0][threadIndex] = inputValue;
-	barrier();
-
-	bool flag = false;
-	uvec2 inputsIndices;
-	vec2 twiddle;
-	
-	for (uint step = 0u; step < uint(LOG_SIZE); step++) {
-		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
-		
-		vec4 v = fftGroupBuffer[uint(flag)][inputsIndices.y];
-		fftGroupBuffer[uint(!flag)][threadIndex] = fftGroupBuffer[uint(flag)][inputsIndices.x] + vec4(ComplexMult(twiddle, v.xy), ComplexMult(twiddle, v.zw));
-		
-		flag = !flag;
-		barrier();
-	}
-	
-	return fftGroupBuffer[uint(flag)][threadIndex];
-}
-
-void main() {
-	for (int i = 0; i < 8; i++) {
-		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i));
-		vec4 result = FFT(gl_GlobalInvocationID.x, data);
-		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.xy, i), result);
-	}
-}
-)glsl";
-
-static const char verticalFFTSrc[] = R"glsl(#version 430 core
-#define SIZE 1024
-#define LOG_SIZE 10
-
-layout(local_size_x = SIZE, local_size_y = 1, local_size_z = 1) in;
-layout(binding = 0, rgba16f) uniform image2DArray _FourierTarget;
-
-shared vec4 fftGroupBuffer[2][SIZE];
-
-vec2 ComplexMult(vec2 a, vec2 b) {
-	return vec2((a.x * b.x) - (a.y * b.y), (a.x * b.y) + (a.y * b.x));
-}
-
-void ButterflyValues(uint step, uint index, out uvec2 indices, inout vec2 twiddle) {
-	float twoPi = 2 * acos(-1.);
-	uint b = uint(SIZE) >> ((step + 1u) & 31u);
-	uint w = b * (index / b);
-	uint i = (w + index) % uint(SIZE);
-	
-	twiddle.y = sin(((-twoPi) / float(SIZE)) * float(w));
-	twiddle.x = cos(((-twoPi) / float(SIZE)) * float(w));
-	
-	twiddle.y = -twiddle.y;
-	indices = uvec2(i, i + b);
-}
-
-vec4 FFT(uint threadIndex, vec4 inputValue) {
-	fftGroupBuffer[0][threadIndex] = inputValue;
-	barrier();
-
-	bool flag = false;
-	uvec2 inputsIndices;
-	vec2 twiddle;
-	
-	for (uint step = 0u; step < uint(LOG_SIZE); step++) {
-		ButterflyValues(step, threadIndex, inputsIndices, twiddle);
-		
-		vec4 v = fftGroupBuffer[uint(flag)][inputsIndices.y];
-		fftGroupBuffer[uint(!flag)][threadIndex] = fftGroupBuffer[uint(flag)][inputsIndices.x] + vec4(ComplexMult(twiddle, v.xy), ComplexMult(twiddle, v.zw));
-		
-		flag = !flag;
-		barrier();
-	}
-	
-	return fftGroupBuffer[uint(flag)][threadIndex];
-}
-
-void main() {
-	for (int i = 0; i < 8; i++) {
-		vec4 data = imageLoad(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i));
-		vec4 result = FFT(gl_GlobalInvocationID.x, data);
-		imageStore(_FourierTarget, ivec3(gl_GlobalInvocationID.yx, i), result);
-	}
-}
-)glsl";
+static const char verticalFFTSrc[] = "#version 430 core\n"
+"layout(local_size_x=1024,local_size_y=1,local_size_z=1)in;"
+"layout(binding=0,rgba16f) uniform image2DArray _FourierTarget;"
+"shared vec4 u[2][1024];"
+"vec2 t(vec2 u,vec2 E)"
+"{"
+	"return vec2(u.x*E.x-u.y*E.y,u.x*E.y+u.y*E.x);"
+"}"
+"void t(uint u,uint v,out uvec2 x,inout vec2 E)"
+"{"
+	"float y=2*acos(-1.);"
+	"u=uint(1024)>>(u+1u&31u);"
+	"uint S=u*(v/u);"
+	"v=(S+v)%uint(1024);"
+	"E.y=sin(-y/float(1024)*float(S));"
+	"E.x=cos(-y/float(1024)*float(S));"
+	"E.y=-E.y;"
+	"x=uvec2(v,v+u);"
+"}"
+"vec4 r(uint v,vec4 E)"
+"{"
+	"u[0][v]=E;"
+	"barrier();"
+	"bool S=false;"
+	"uvec2 x;"
+	"vec2 i;"
+	"for(uint E=0u;E<uint(10);E++)"
+	"{"
+		"t(E,v,x,i);"
+		"vec4 y=u[uint(S)][x.y];"
+		"u[uint(!S)][v]=u[uint(S)][x.x]+vec4(t(i,y.xy),t(i,y.zw));"
+		"S=!S;"
+		"barrier();"
+	"}"
+	"return u[uint(S)][v];"
+"}"
+"void main()"
+"{"
+	"for(int E=0;E<8;E++)"
+	"{"
+		"vec4 u=imageLoad(_FourierTarget,ivec3(gl_GlobalInvocationID.yx,E));"
+		"u=r(gl_GlobalInvocationID.x,u);"
+		"imageStore(_FourierTarget,ivec3(gl_GlobalInvocationID.yx,E),u);"
+	"}"
+"}";
 
 // --------------------------- ATMOSPHERE SHADERS ---------------------------
 

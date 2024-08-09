@@ -43,7 +43,7 @@ Mesh generateGrid(vec2 size, int subdivision) {
 
 	GLuint vao = 0;
 	vec3 *positions = (vec3*)malloc(sizeof(vec3) * vertexNbr);
-	int *indices = (int*)malloc(sizeof(int) * indexNbr);
+	unsigned int *indices = (unsigned int*)malloc(sizeof(int) * indexNbr);
 
 	if (positions && indices) {
 		int index = 0;
@@ -88,11 +88,11 @@ Mesh createParticles(int pointCount, float radius) {
 
 	if (points) {
 		for (int i = 0; i < pointCount; ++i) {
-			float u = (float)rand() / RAND_MAX;
-			float v = (float)rand() / RAND_MAX;
+			float u = (float)rand() / (float)RAND_MAX;
+			float v = (float)rand() / (float)RAND_MAX;
 			float theta = u * 2.0f * M_PI;
 			float phi = acos(2.0f * v - 1.0f);
-			float r = cbrtf((float)rand() / RAND_MAX) * radius;
+			float r = cbrtf((float)rand() / (float)RAND_MAX) * radius;
 
 			points[i].x = r * sin(phi) * cos(theta);
 			points[i].y = r * sin(phi) * sin(theta);

@@ -31,9 +31,12 @@ Current total size: 61833 bytes
 - Minify shaders
 - Credit scene
 
-### TODO
-
 - Taking the competition
+
+### Result
+
+- 1st place in the 64 KB track
+- 2nd place in the 64 MB track
 
 ## Building the Project
 
